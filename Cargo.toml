@@ -1,0 +1,11 @@
+[package]
+name = "ble_desktop"
+version = "0.1.0"
+authors = ["liodali "]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+btleplug = "0.9.0"
+tokio = { version = "1.14.0", features = ["rt", "macros","rt-multi-thread"] }
