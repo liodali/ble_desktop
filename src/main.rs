@@ -18,7 +18,7 @@ use crate::common::utils::{map_peripherals_to_properties, transform_peripherals_
 
 async fn find_peripherals(central: &Adapter, filter: Option<&str>) -> Vec<DeviceInfo> {
     let mut peripherals = Vec::new();
-    if filter.is_none() | filter.unwrap().is_empty() {
+    if filter.is_none() || filter.unwrap().is_empty() {
         return transform_peripherals_to_properties(&central).await.unwrap();
     }
     for p in central.peripherals().await.unwrap() {
@@ -61,7 +61,8 @@ async  fn main() {
     println!("{}", iters_adapts.len());
     match iters_adapts.len() == 1 {
         true => {
-            ble.select_default_adapter();
+            let adapt = iters_adapts.nth(0).unwrap();
+            ble.set_adapter(&adapt);
         }
         false => {
             println!("ble adapter available");
