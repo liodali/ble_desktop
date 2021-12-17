@@ -7,7 +7,8 @@ use btleplug::api::Peripheral as _;
 use btleplug::Error;
 use btleplug::platform::Peripheral;
 use btleplug::platform::Adapter;
-use crate::{block_on, DeviceInfo};
+use crate::models::device_info::*;
+use futures::executor::block_on;
 
 pub async fn transform_peripherals_to_properties(adapter: &Adapter) -> Result<Vec<DeviceInfo>, Error> {
     let peripherals = adapter.peripherals().await.unwrap();

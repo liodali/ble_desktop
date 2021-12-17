@@ -1,2 +1,4 @@
 /target
 .idea
+/dart-ffi/Cargo.lock
+/test-lib/Cargo.lock

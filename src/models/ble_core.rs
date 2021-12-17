@@ -1,8 +1,12 @@
-use btleplug::api::{PeripheralProperties};
+use btleplug::api::{PeripheralProperties, ScanFilter, Central, Peripheral};
 use async_trait::async_trait;
 use btleplug::api::Manager as _;
 use btleplug::Result;
 use btleplug::platform::{Adapter, Manager};
+use crate::models::device_info::*;
+use crate::common::utils::*;
+use tokio::time;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct BleCore {
@@ -54,36 +58,35 @@ impl BleRepo for BleCore {
     }
 }
 
-
-#[derive(Debug, Clone)]
-pub struct DeviceInfo {
-    name: String,
-    adr: String,
-}
-
-
-impl DeviceInfo {
-    pub fn new(name: String, adr: String) -> Self {
-        DeviceInfo {
-            name,
-            adr,
+async fn find_peripherals(central: &Adapter, filter: Option<&str>) -> Vec<DeviceInfo> {
+    let mut peripherals = Vec::new();
+    if filter.is_none() || filter.unwrap().is_empty() {
+        return transform_peripherals_to_properties(&central).await.unwrap();
+    }
+    for p in central.peripherals().await.unwrap() {
+        if p.properties()
+            .await
+            .unwrap()
+            .unwrap()
+            .local_name
+            .iter()
+            .any(|name| name.contains(filter.unwrap()))
+        {
+            peripherals.push(p);
         }
     }
-    pub fn from(p: PeripheralProperties) -> DeviceInfo {
-        let property = p.clone();
-        DeviceInfo::new(
-            property.local_name.unwrap(),
-            property.address.to_string(),
-        )
-    }
-    #[warn(dead_code)]
-    pub fn set_name(&mut self, n: String) {
-        self.name = n
-    }
-    pub fn set_adr(&mut self, address: String) {
-        self.adr = address
-    }
-    pub fn to_string(&self) -> String {
-        String::from(format_args!("name : {name},address : {adr}", name = self.name, adr = self.adr).to_string())
-    }
+
+    map_peripherals_to_properties(Vec::from_iter(peripherals.iter())).await
+}
+
+pub async fn list_devices(ble_core: &mut BleCore, secs: Option<u64>) -> Vec<DeviceInfo> {
+    let my_adapt = ble_core.get_adapter().unwrap();
+    my_adapt.start_scan(ScanFilter::default());
+    let sleep = if secs.is_none() { 2 } else { secs.unwrap() };
+    time::sleep(Duration::from_secs(sleep)).await;
+
+    // find the device we're interested in
+    let peripherals: Vec<DeviceInfo> = find_peripherals(&my_adapt, None).await;
+    my_adapt.stop_scan().await;
+    peripherals
 }
