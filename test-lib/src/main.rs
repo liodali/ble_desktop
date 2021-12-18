@@ -42,7 +42,7 @@ async fn main() {
             ble.set_adapter(&(iters_adapts.nth(0).unwrap()));
         }
     }
-    let devices = list_devices(&mut ble, Some(2)).await;
+    let devices = ble.list_devices(Some(2)).await;
     devices.into_iter().map(
         |d| d.to_string()
     ).for_each(
