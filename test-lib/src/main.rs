@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use ble_desktop::common::*;
 use ble_desktop::models::*;
 
@@ -9,6 +10,8 @@ use btleplug::api::{Central};
 use btleplug::api::Peripheral;
 use btleplug::platform::{Adapter};
 use std::iter::FromIterator;
+use std::ops::Deref;
+use std::sync::Arc;
 use std::time::Duration;
 use futures::executor::block_on;
 use tokio::time;
@@ -16,13 +19,14 @@ use ble_desktop::models::ble_core::*;
 use ble_desktop::models::device_info::*;
 use ble_desktop::common::utils::*;
 
-pub async fn instantiate() -> BleCore {
-    block_on(BleCore::new()).unwrap()
+pub async fn instantiate() -> Arc<BleCore> {
+    block_on(BleCore::create()).unwrap()
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
-    let mut ble = instantiate().await;
+    instantiate().await;
+    let mut ble = BleCore::get_instance().unwrap().deref().clone();
     let adapts = ble.get_adapters().await.unwrap();
     let mut iters_adapts = adapts.into_iter();
     println!("{}", iters_adapts.len());
