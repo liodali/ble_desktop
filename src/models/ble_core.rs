@@ -4,11 +4,13 @@ use async_trait::async_trait;
 use btleplug::api::Manager as _;
 use btleplug::Result;
 use btleplug::platform::{Adapter, Manager};
+use btleplug::platform::Peripheral as StructPeripheral;
 use crate::models::device_info::*;
 use crate::common::utils::*;
 use tokio::time;
 use std::time::Duration;
 use std::sync::{Arc, Mutex, RwLock};
+use futures::executor::block_on;
 use hashbrown::hash_map;
 use hashbrown::HashMap;
 use hashbrown::hash_map::Entry;
@@ -30,8 +32,8 @@ pub trait BleRepo {
     async fn list_devices(&mut self, secs: Option<u64>) -> Vec<DeviceInfo>;
     async fn start_scan(&mut self, filter: Option<ScanFilter>);
     async fn stop_scan(&mut self);
-    fn connect(&mut self, device: DeviceInfo);
-    fn disconnect(&mut self, device: DeviceInfo);
+    async fn connect(&mut self, device: DeviceInfo) -> Result<()>;
+    async fn disconnect(&mut self, device: DeviceInfo) -> Result<()>;
     //async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo>;
 }
 
@@ -66,6 +68,23 @@ impl BleCore {
     }
     pub fn get_adapter(&self) -> Option<Adapter> {
         self.ble_adapter.clone()
+    }
+
+    async fn get_peripherals_by_device(&mut self, device: &DeviceInfo) -> Option<StructPeripheral> {
+        let central = (self.ble_adapter.as_ref().unwrap());
+        for p in central.peripherals().await.unwrap() {
+            if p.properties()
+                .await
+                .unwrap()
+                .unwrap()
+                .local_name
+                .iter()
+                .any(|name| name.contains(&device.name))
+            {
+                return Some(p);
+            }
+        }
+        None
     }
 
     async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo> {
@@ -122,19 +141,21 @@ impl BleRepo for BleCore {
         peripherals
     }
 
-    async fn start_scan(&mut self,filter:Option<ScanFilter>) {
-        self.ble_adapter.unwrap().start_scan()
+    async fn start_scan(&mut self, filter: Option<ScanFilter>) {
+        self.ble_adapter.as_ref().unwrap().start_scan(filter.unwrap());
     }
 
     async fn stop_scan(&mut self) {
-        self.ble_adapter.unwrap().stop_scan()
+        self.ble_adapter.as_ref().unwrap().stop_scan();
     }
 
-    fn connect(&mut self, device: DeviceInfo) {
-        todo!()
+    async fn connect(&mut self, device: DeviceInfo) -> Result<()> {
+        let peripheral = self.get_peripherals_by_device(&device).await;
+        return peripheral.unwrap().connect().await;
     }
 
-    fn disconnect(&mut self, device: DeviceInfo) {
-        todo!()
+    async fn disconnect(&mut self, device: DeviceInfo) -> Result<()> {
+        let peripheral = self.get_peripherals_by_device(&device).await;
+        return peripheral.unwrap().disconnect().await;
     }
 }

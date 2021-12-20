@@ -1,6 +1,7 @@
-use ble_desktop::common::*;
-use ble_desktop::models::ble_core::BleCore;
-use crate::utils::*;
+use ble_desktop::common::utils::*;
+use ble_desktop::models::ble_core::{BleCore, BleRepo};
+use crate::utils::{run_async, RUNTIME_THREAD, runtime, error};
+use allo_isolate::Isolate;
 
 struct BleCoreSend(*mut *const BleCore);
 
@@ -25,5 +26,16 @@ pub unsafe extern "C" fn ble_instance(
                 panic!("error to intantiate ble core")
             }
         }
+    })
+}
+
+pub unsafe extern "C" fn get_list_devices(port: i64, seconds: u64) {
+    let ble = BleCore::get_instance().unwrap();
+    let rt = runtime!();
+    rt.spawn(async move {
+        let devices = ble.list_devices(seconds).await;
+        let isolate = Isolate::new(port);
+        let json = map_device_to_json(devices);
+        isolate.post(json)
     })
 }

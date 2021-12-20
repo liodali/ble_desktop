@@ -9,6 +9,9 @@
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/dart-ffi/target" />
       <excludeFolder url="file://$MODULE_DIR$/test-lib/target" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/dart_ble_desktop/build" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/dart_ble_desktop/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/dart_ble_desktop/.pub" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
