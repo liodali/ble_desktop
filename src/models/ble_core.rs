@@ -26,7 +26,7 @@ pub struct BleCore {
 }
 
 #[async_trait]
-pub trait BleRepo {
+pub trait BleRepo: Send + Sync {
     async fn get_adapters(&self) -> Result<Vec<Adapter>>;
     fn set_adapter(&mut self, adapt: &Adapter);
     async fn list_devices(&mut self, secs: Option<u64>) -> Vec<DeviceInfo>;
@@ -36,6 +36,10 @@ pub trait BleRepo {
     async fn disconnect(&mut self, device: DeviceInfo) -> Result<()>;
     //async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo>;
 }
+
+unsafe impl Send for BleCore {}
+
+unsafe impl Sync for BleCore {}
 
 impl BleCore {
     pub async fn create() -> Result<Arc<Self>> {
@@ -56,7 +60,8 @@ impl BleCore {
         })
     }
     pub fn get_instance() -> Option<Arc<Self>> {
-        INSTANCES.read().unwrap().get(&0).cloned()
+        let map = INSTANCES.read().unwrap().clone();
+        map.get(&0).cloned()
     }
     pub async fn select_default_adapter(&mut self) {
         let adapters = self.get_adapters().await.unwrap();

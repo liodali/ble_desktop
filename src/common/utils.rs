@@ -31,6 +31,6 @@ pub async fn map_peripherals_to_properties(vec_peripherals: Vec<&Peripheral>) ->
 }
 
 pub fn map_device_to_json(devices: Vec<DeviceInfo>) -> String {
-    let vec_json = serde_json::to_string(&devices)?;
-    vec_json
+    let vec_json = serde_json::to_string(&devices);
+    vec_json.unwrap()
 }

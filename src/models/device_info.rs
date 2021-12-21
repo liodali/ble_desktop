@@ -1,11 +1,10 @@
 use btleplug::api::PeripheralProperties;
 use btleplug::platform::{Peripheral};
+use serde::{Serialize, Deserialize};
 use serde_json::json;
-use serde::{Deserialize, Serialize};
-use serde::json;
 
-#[derive(Debug, Clone)]
-#[derive(Serialize, Deserialize)]
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[repr(C)]
 pub struct DeviceInfo {
     pub name: String,
@@ -38,12 +37,7 @@ impl DeviceInfo {
         String::from(format_args!("name : {name},address : {adr}", name = self.name, adr = self.adr).to_string())
     }
 
-    pub fn toJson(&self) -> json {
-        json!(
-            {
-                "name":self.name,
-                "adr":self.adr
-            }
-        )
+    pub fn toJson(&self) -> String {
+        return serde_json::to_string(self).unwrap();
     }
 }

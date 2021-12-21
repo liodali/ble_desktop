@@ -4,3 +4,4 @@
 /test-lib/Cargo.lock
 /dart-ffi/target/
 /*/target
+Cargo.lock
