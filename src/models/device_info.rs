@@ -1,7 +1,6 @@
 use btleplug::api::PeripheralProperties;
 use btleplug::platform::{Peripheral};
 use serde::{Serialize, Deserialize};
-use serde_json::json;
 
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -37,7 +36,7 @@ impl DeviceInfo {
         String::from(format_args!("name : {name},address : {adr}", name = self.name, adr = self.adr).to_string())
     }
 
-    pub fn toJson(&self) -> String {
+    pub fn to_json(&self) -> String {
         return serde_json::to_string(self).unwrap();
     }
 }

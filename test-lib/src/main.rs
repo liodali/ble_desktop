@@ -1,23 +1,10 @@
-use std::borrow::BorrowMut;
-use ble_desktop::common::*;
-use ble_desktop::models::*;
-
 extern crate futures;
 
 
-use btleplug::api::ScanFilter;
-use btleplug::api::{Central};
-use btleplug::api::Peripheral;
-use btleplug::platform::{Adapter};
-use std::iter::FromIterator;
 use std::ops::Deref;
 use std::sync::Arc;
-use std::time::Duration;
 use futures::executor::block_on;
-use tokio::time;
-use ble_desktop::models::ble_core::*;
-use ble_desktop::models::device_info::*;
-use ble_desktop::common::utils::*;
+use ble_desktop::models::ble_core::{BleCore,BleRepo};
 
 pub async fn instantiate() -> Arc<BleCore> {
     block_on(BleCore::create()).unwrap()

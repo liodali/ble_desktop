@@ -1,4 +1,3 @@
-use std::iter::Scan;
 use btleplug::api::{PeripheralProperties, ScanFilter, Central, Peripheral};
 use async_trait::async_trait;
 use btleplug::api::Manager as _;
@@ -7,14 +6,11 @@ use btleplug::platform::{Adapter, Manager};
 use btleplug::platform::Peripheral as StructPeripheral;
 use crate::models::device_info::*;
 use crate::common::utils::*;
-use tokio::time;
-use std::time::Duration;
-use std::sync::{Arc, Mutex, RwLock};
-use futures::executor::block_on;
-use hashbrown::hash_map;
+use std::{thread, time::Duration};
 use hashbrown::HashMap;
 use hashbrown::hash_map::Entry;
 use once_cell::sync::Lazy;
+use std::sync::{RwLock,Arc};
 
 static INSTANCES: Lazy<RwLock<HashMap<u32, Arc<BleCore>>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
@@ -76,7 +72,7 @@ impl BleCore {
     }
 
     async fn get_peripherals_by_device(&mut self, device: &DeviceInfo) -> Option<StructPeripheral> {
-        let central = (self.ble_adapter.as_ref().unwrap());
+        let central = self.ble_adapter.as_ref().unwrap();
         for p in central.peripherals().await.unwrap() {
             if p.properties()
                 .await
@@ -94,7 +90,7 @@ impl BleCore {
 
     async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo> {
         let mut peripherals = Vec::new();
-        let central = (self.ble_adapter.as_ref().unwrap());
+        let central = self.ble_adapter.as_ref().unwrap();
         if filter.is_none() || filter.unwrap().is_empty() {
             return transform_peripherals_to_properties(central).await.unwrap();
         }
@@ -136,10 +132,10 @@ impl BleRepo for BleCore {
             panic!("no adapter was available,please check you device")
         }
         let my_adapt = self.get_adapter().unwrap();
-        my_adapt.start_scan(ScanFilter::default());
+        my_adapt.start_scan(ScanFilter::default()).await;
         let sleep = if secs.is_none() { 2 } else { secs.unwrap() };
-        time::sleep(Duration::from_secs(sleep)).await;
-
+        // time::sleep(Duration::from_secs(sleep)).await;
+        thread::sleep(Duration::from_secs(sleep));
         // find the device we're interested in
         let peripherals: Vec<DeviceInfo> = self.find_peripherals(None).await;
         my_adapt.stop_scan().await;
@@ -151,7 +147,7 @@ impl BleRepo for BleCore {
     }
 
     async fn stop_scan(&mut self) {
-        self.ble_adapter.as_ref().unwrap().stop_scan();
+        self.ble_adapter.as_ref().unwrap().stop_scan().await;
     }
 
     async fn connect(&mut self, device: DeviceInfo) -> Result<()> {

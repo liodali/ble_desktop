@@ -1,9 +1,8 @@
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use threadpool::{Builder, ThreadPool};
-use ffi_helpers::null_pointer_check;
 use lazy_static::lazy_static;
-use std::{ffi::CStr, io, os::raw};
+use std::{io};
 use tokio::runtime::{Runtime};
 use tokio::runtime::Builder as TokioBuilder;
 
@@ -12,6 +11,7 @@ static THREAD_POOL: Lazy<Mutex<ThreadPool>> = Lazy::new(|| Mutex::new(Builder::n
 pub fn run_async<F: FnOnce() + Send + 'static>(job: F) {
     THREAD_POOL.lock().unwrap().execute(job);
 }
+
 lazy_static! {
    pub static ref RUNTIME_THREAD: io::Result<Runtime> = TokioBuilder::new_multi_thread()
         .worker_threads(2)

@@ -5,3 +5,4 @@
 /dart-ffi/target/
 /*/target
 Cargo.lock
+/dart-ffi/build/cbindgen.toml
