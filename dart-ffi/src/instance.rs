@@ -19,26 +19,24 @@ pub unsafe extern "C" fn ble_instance(
     ble: *mut *const BleCore
 ) {
     let ble_core_send = BleCoreSend(ble);
-    let rt = runtime!();
-    rt.spawn(try_join_all(async {
-        BleCore::create().await;
-        let instance = BleCore::get_instance();
-        match instance {
-            Some(ble_core) => {
-                ble_core_send.0.write(ble_core.as_ref());
-            }
-            _ => {
-                panic!("error to intantiate ble core")
-            }
-        }
-    }));
-    // run_async(move || {
-    //     async {
-    //
-    //     };
-    // });
 
+    run_async(move || {
+        async {
+            let ble_core_send = ble_core_send;
+            BleCore::create().await;
+            let instance = BleCore::get_instance();
+            match instance {
+                Some(ble_core) => {
+                    ble_core_send.0.write(ble_core.as_ref());
+                }
+                _ => {
+                    panic!("error to intantiate ble core")
+                }
+            }
+        };
+    });
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn get_list_devices(port: i64, seconds: u64) {
     let mut ble = BleCore::get_instance().unwrap().deref().clone();
