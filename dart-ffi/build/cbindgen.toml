@@ -1,0 +1,9 @@
+language = "C"
+
+[parse]
+parse_deps = true
+include = ["ble_desktop", "ble-core-dart-ffi"]
+
+[parse.expand]
+crates = ["ble-core-dart-ffi"]
+all_features = true

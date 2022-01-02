@@ -31,7 +31,7 @@ pub unsafe extern "C" fn ble_instance(
                 panic!("error to intantiate ble core")
             }
         }
-    }.await));
+    }));
     // run_async(move || {
     //     async {
     //
