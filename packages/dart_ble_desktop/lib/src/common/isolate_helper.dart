@@ -56,6 +56,7 @@ SendPort singleCompletePort<R, P>(
   }
   return responsePort.sendPort;
 }
+
 /// Helper function for [singleCallbackPort].
 ///
 /// Replace [singleCallbackPort] with this

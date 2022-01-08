@@ -12,7 +12,7 @@ import 'native/ble_ffi.dart';
 int currentIdBleCore = 0;
 
 abstract class BluetoothCore {
-  late BleFFI bleFFI;
+  late BleFFI _bleFFI;
 
   int _idBleCore = currentIdBleCore;
 
@@ -30,9 +30,14 @@ abstract class BluetoothCore {
     BleFFI.init(namePathLib);
   }
 
+  static close() {
+    BleFFI.close();
+    ;
+  }
+
   BluetoothCore.setUp() {
     _idBleCore++;
-    bleFFI = BleFFI.instance;
+    _bleFFI = BleFFI.instance;
     _instances[_idBleCore] = this;
   }
   @mustCallSuper
@@ -49,11 +54,12 @@ class BluetoothCoreImpl extends BluetoothCore {
   @override
   Future<List<Device>> getListDevices({int secondsWait = 2}) async {
     final completer = Completer<String>();
+    final ptr = _bleFFI.blePointer;
     final sendPort = singleCompletePort(completer);
-    bleFFI.getListDevices(sendPort.nativePort,seconds: secondsWait);
+    _bleFFI.getListDevices(ptr, sendPort.nativePort, seconds: secondsWait);
     final resultJson = await completer.future;
     print(resultJson);
-    final List<Map> jsonDevice = json.decode(resultJson);
-    return jsonDevice.map((e) => Device.fromMap(e)).toList();
+    final List jsonDevice = jsonDecode(resultJson);
+    return (jsonDevice).map((e) => Device.fromMap(e)).toList();
   }
 }
