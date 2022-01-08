@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use std::{io};
 use tokio::runtime::{Runtime};
 use tokio::runtime::Builder as TokioBuilder;
+use crate::lazy_static;
 
 static THREAD_POOL: Lazy<Mutex<ThreadPool>> = Lazy::new(|| Mutex::new(Builder::new().build()));
 
@@ -13,12 +14,13 @@ pub fn run_async<F: FnOnce() + Send + 'static>(job: F) {
 }
 
 lazy_static! {
-   pub static ref RUNTIME_THREAD: io::Result<Runtime> = TokioBuilder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .thread_name("ble_async")
-        .build();
+     pub static ref RUNTIME_THREAD: io::Result<Runtime> = TokioBuilder::new_multi_thread()
+    .worker_threads(2)
+    .enable_all()
+    .thread_name("ble_async")
+    .build();
 }
+
 #[macro_export]
 macro_rules! error {
     ($result:expr) => {
@@ -47,7 +49,7 @@ macro_rules! cstr {
 #[macro_export]
 macro_rules! runtime {
     () => {
-        match RUNTIME_THREAD.as_ref() {
+        match crate::utils::RUNTIME_THREAD.as_ref() {
             Ok(rt) => rt,
             Err(_) => {
                 return ;

@@ -1,36 +1,52 @@
-extern crate futures;
-
-
 use std::iter::FromIterator;
-use btleplug::api::{Central};
+
+use btleplug::api::Central;
 use btleplug::api::Peripheral as _;
 use btleplug::Error;
-use btleplug::platform::Peripheral;
 use btleplug::platform::Adapter;
-use crate::models::device_info::*;
+use btleplug::platform::Peripheral;
 use futures::executor::block_on;
+use futures::future::join_all;
+
+use crate::models::device_info::*;
 
 pub async fn transform_peripherals_to_properties(adapter: &Adapter) -> Result<Vec<DeviceInfo>, Error> {
-    let peripherals = adapter.peripherals().await.unwrap();
-
-    let vec_peripherals = Vec::from_iter(peripherals.iter());
-    let properties = map_peripherals_to_properties(vec_peripherals).await;
-    return Ok(properties);
+    let adapter = adapter.clone();
+    let peripherals_result = adapter.peripherals().await;
+    match peripherals_result {
+        Ok(result) => {
+            let peripherals = result;
+            let vec_peripherals = Vec::from_iter(peripherals.iter());
+            let properties = map_peripherals_to_properties(vec_peripherals).await;
+            return Ok(properties);
+        }
+        _ => {
+            panic!("error to get peripherals")
+        }
+    };
 }
 
 pub async fn map_peripherals_to_properties(vec_peripherals: Vec<&Peripheral>) -> Vec<DeviceInfo> {
     let mut vec_properties = Vec::new();
-    for p in vec_peripherals.iter() {
-        block_on(async {
-            let peri = p.to_owned().to_owned().properties().await.unwrap().unwrap();
-            vec_properties.push(DeviceInfo::from(peri))
-        });
+    let properties_peripherals = join_all(vec_peripherals.iter().map(
+        |p| async {
+            p.to_owned().to_owned().properties().await.unwrap().unwrap()
+        }
+    )).await;
+    for p in properties_peripherals {
+        vec_properties.push(DeviceInfo::from(p))
     }
-
     return vec_properties;
 }
 
-pub fn map_device_to_json(devices: Vec<DeviceInfo>) -> String {
+pub  fn map_device_to_json(devices: Vec<DeviceInfo>) -> String {
     let vec_json = serde_json::to_string(&devices);
-    vec_json.unwrap()
+    match vec_json {
+        Ok(data_json) => {
+            data_json
+        }
+        _ => {
+            panic!("error to parse data to json")
+        }
+    }
 }
