@@ -1,6 +1,7 @@
 use std::borrow::BorrowMut;
 use std::future::Future;
 use std::marker::{Send, Sync};
+use std::os::raw::c_char;
 
 use allo_isolate::Isolate;
 use futures::executor::block_on;
@@ -91,5 +92,15 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64, s
                 }
             ).await;
         })
+    });
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, address: *const c_char) {
+    let ble_core = BleCoreSend(ble);
+    let adrDevice = address.as_ref().unwrap().to_string();
+    let rt = runtime!();
+    rt.spawn(async move {
+
     });
 }
