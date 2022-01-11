@@ -137,7 +137,7 @@ impl BleRepo for BleCore {
             }
         }
     }
-    fn list_devices(&mut self, secs: Option<u64>) -> Vec<DeviceInfo>
+    fn list_devices(&mut self, secs: Option<u64>,filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>
     {
         let mut adapt_option = self.get_adapter().clone();
         if adapt_option.is_none() {
