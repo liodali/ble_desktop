@@ -1,6 +1,6 @@
 use std::iter::FromIterator;
 
-use btleplug::api::Central;
+use btleplug::api::{Central, PeripheralProperties};
 use btleplug::api::Peripheral as _;
 use btleplug::Error;
 use btleplug::platform::Adapter;
@@ -26,20 +26,26 @@ pub async fn transform_peripherals_to_properties(adapter: &Adapter) -> Result<Ve
     };
 }
 
-pub async fn map_peripherals_to_properties(vec_peripherals: Vec<&Peripheral>) -> Vec<DeviceInfo> {
-    let mut vec_properties = Vec::new();
+pub async fn get_list_properties_from_peripheral(vec_peripherals: Vec<&Peripheral>) -> Vec<PeripheralProperties> {
     let properties_peripherals = join_all(vec_peripherals.iter().map(
         |p| async {
             p.to_owned().to_owned().properties().await.unwrap().unwrap()
         }
     )).await;
+    return properties_peripherals;
+}
+
+pub async fn map_peripherals_to_properties(vec_peripherals: Vec<&Peripheral>) -> Vec<DeviceInfo> {
+    let mut vec_properties = Vec::new();
+    let vec_peripherals = vec_peripherals;
+    let properties_peripherals = get_list_properties_from_peripheral(vec_peripherals).await;
     for p in properties_peripherals {
         vec_properties.push(DeviceInfo::from(p))
     }
     return vec_properties;
 }
 
-pub  fn map_device_to_json(devices: Vec<DeviceInfo>) -> String {
+pub fn map_device_to_json(devices: Vec<DeviceInfo>) -> String {
     let vec_json = serde_json::to_string(&devices);
     match vec_json {
         Ok(data_json) => {
