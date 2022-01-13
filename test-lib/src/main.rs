@@ -32,7 +32,7 @@ fn main() {
         let mut iters_adapts = adapts.into_iter();
         println!("len {}", iters_adapts.len());
         ble.select_default_adapter();
-        let devices = ble.list_devices(Some(2));
+        let devices = ble.list_devices(Some(2),None);
         devices.into_iter().map(
             |d| d.to_string()
         ).for_each(

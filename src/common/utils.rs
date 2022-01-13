@@ -17,7 +17,7 @@ pub async fn transform_peripherals_to_properties(adapter: &Adapter) -> Result<Ve
         Ok(result) => {
             let peripherals = result;
             let vec_peripherals = Vec::from_iter(peripherals.iter());
-            let properties = map_peripherals_to_properties(vec_peripherals).await;
+            let properties = map_peripherals_to_device_info(vec_peripherals).await;
             return Ok(properties);
         }
         _ => {
@@ -35,12 +35,19 @@ pub async fn get_list_properties_from_peripheral(vec_peripherals: Vec<&Periphera
     return properties_peripherals;
 }
 
-pub async fn map_peripherals_to_properties(vec_peripherals: Vec<&Peripheral>) -> Vec<DeviceInfo> {
+pub async fn map_peripherals_to_device_info(vec_peripherals: Vec<&Peripheral>) -> Vec<DeviceInfo> {
     let mut vec_properties = Vec::new();
     let vec_peripherals = vec_peripherals;
+    let list_connected_state = join_all(vec_peripherals.iter().map(|p|
+        async {
+            p.is_connected().await.unwrap()
+        }
+    )).await;
     let properties_peripherals = get_list_properties_from_peripheral(vec_peripherals).await;
-    for p in properties_peripherals {
-        vec_properties.push(DeviceInfo::from(p))
+    for (index, p) in properties_peripherals.iter().enumerate() {
+        let is_connected = list_connected_state.get(index).unwrap().clone();
+        let propertie = p.to_owned();
+        vec_properties.push(DeviceInfo::from(propertie, is_connected))
     }
     return vec_properties;
 }
