@@ -8,6 +8,7 @@ use futures::executor::block_on;
 
 use ble_desktop::common::utils::*;
 use ble_desktop::models::ble_core::{BleCore, BleRepo};
+use ble_desktop::models::filter_device::{FilterBleDevice, FilterType};
 
 use crate::runtime;
 use crate::utils::run_async;
@@ -84,7 +85,7 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64, s
                 println!("no adapter was selected");
             }
         }
-        let devices = instance.list_devices(Some(seconds));
+        let devices = instance.list_devices(Some(seconds), None);
         block_on(async {
             Isolate::new(port).task(
                 async {
@@ -101,6 +102,11 @@ pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, 
     let adrDevice = address.as_ref().unwrap().to_string();
     let rt = runtime!();
     rt.spawn(async move {
-
+        let ble_core = ble_core;
+        let mut instance = ble_core.0.read().read();
+        instance.connect(FilterBleDevice {
+            name: FilterType::byAdr,
+            value: adrDevice.to_string(),
+        })
     });
 }
