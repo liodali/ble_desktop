@@ -5,6 +5,7 @@ use std::thread::spawn;
 use async_trait::async_trait;
 use btleplug::api::{Central, Peripheral, PeripheralProperties, ScanFilter};
 use btleplug::api::Manager as _;
+use btleplug::Error::Other;
 use btleplug::platform::{Adapter, Manager};
 use btleplug::platform::Peripheral as StructPeripheral;
 use btleplug::Result;
@@ -32,7 +33,7 @@ pub struct BleCore {
 pub trait BleRepo: Send + Sync {
     fn get_adapters(&self) -> Result<Vec<Adapter>>;
     fn set_adapter(&mut self, adapt: &Adapter);
-    fn list_devices(&mut self, secs: Option<u64>,filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>;
+    fn list_devices(&mut self, secs: Option<u64>, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>;
     fn start_scan(&mut self, filter: Option<ScanFilter>);
     fn stop_scan(&mut self);
     fn connect(&mut self, filter: FilterBleDevice) -> Result<()>;
@@ -83,18 +84,27 @@ impl BleCore {
         self.ble_adapter.clone()
     }
 
-    async fn get_peripherals_by_filter(&mut self, filter: &FilterBleDevice) -> Option<StructPeripheral> {
-        let central = self.ble_adapter.as_ref().unwrap();
-        let peripherals = central.peripherals().await.unwrap();
-        let vec_peripherals = Vec::from_iter(peripherals.iter());
+    async fn get_peripheral_by_filter(&mut self, peripheral_list: Option<Vec<StructPeripheral>>, filter: &FilterBleDevice) -> Option<StructPeripheral> {
+        let mut vec_peripherals;
+        let mut peripherals;
+        match peripheral_list.is_some() {
+            true => {
+                peripherals = peripheral_list.unwrap();
+            }
+            _ => {
+                let central = self.ble_adapter.as_ref().unwrap();
+                peripherals = central.peripherals().await.unwrap()
+            }
+        }
+        vec_peripherals = Vec::from_iter(peripherals.iter());
 
-        let properties = get_list_properties_from_peripheral(vec_peripherals).await;
+        let properties = get_list_properties_from_peripheral(vec_peripherals.clone()).await;
         for (index, p) in properties.iter().enumerate() {
             match filter.name {
                 FilterType::byName => {
                     if p.local_name.as_ref().unwrap().contains(&filter.value)
                     {
-                        let peripherals = peripherals.clone();
+                        let peripherals = vec_peripherals;
                         let peri = peripherals.get(index).unwrap().clone().clone();
                         return Some(peri);
                     }
@@ -102,7 +112,7 @@ impl BleCore {
                 FilterType::byAdr => {
                     if p.address.to_string().contains(&filter.value)
                     {
-                        let peripherals = peripherals.clone();
+                        let peripherals = vec_peripherals;
                         let peri = peripherals.get(index).unwrap().clone().clone();
                         return Some(peri);
                     }
@@ -111,27 +121,62 @@ impl BleCore {
         }
         None
     }
-
-    async fn find_peripherals(&mut self, adapter: &Adapter, filter: Option<&str>) -> Vec<DeviceInfo> {
-        let mut peripherals = Vec::new();
-        let mut central = adapter.clone();
-        if filter.is_none() || filter.unwrap().is_empty() {
-            return transform_peripherals_to_properties(&central).await.unwrap();
-        }
-        for p in central.peripherals().await.unwrap() {
-            if p.properties()
-                .await
-                .unwrap()
-                .unwrap()
-                .local_name
-                .iter()
-                .any(|name| name.contains(filter.unwrap()))
-            {
-                peripherals.push(p);
+    async fn get_peripherals_by_filter(&mut self, peripheral_list: Option<Vec<StructPeripheral>>, filter: &FilterBleDevice) -> Option<Vec<StructPeripheral>> {
+        let mut vec_peripherals;
+        let mut peripherals;
+        match peripheral_list.is_some() {
+            true => {
+                peripherals = peripheral_list.unwrap();
+            }
+            _ => {
+                let central = self.ble_adapter.as_ref().unwrap();
+                peripherals = central.peripherals().await.unwrap()
             }
         }
+        vec_peripherals = Vec::from_iter(peripherals.iter());
 
-        map_peripherals_to_device_info(Vec::from_iter(peripherals.iter())).await
+        let properties = get_list_properties_from_peripheral(vec_peripherals.clone()).await;
+        let mut list = Vec::new();
+        for (index, p) in properties.iter().enumerate() {
+            match filter.name {
+                FilterType::byName => {
+                    if p.local_name.as_ref().unwrap().contains(&filter.value)
+                    {
+                        let peripherals = &vec_peripherals;
+                        let peri = peripherals.get(index).unwrap().clone().clone();
+                        list.push(peri)
+                    }
+                }
+                FilterType::byAdr => {
+                    if p.address.to_string().contains(&filter.value)
+                    {
+                        let peripherals = &vec_peripherals;
+                        let peri = peripherals.get(index).unwrap().clone().clone();
+                        list.push(peri)
+                    }
+                }
+            }
+        }
+        Some(list)
+    }
+
+    async fn find_peripherals(&mut self, adapter: &Adapter, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo> {
+        let mut central = adapter.clone();
+        let result_peripherals = central.peripherals().await;
+        match result_peripherals {
+            Ok(vec_peripherals) => {
+                if filter.is_none() {
+                    return transform_peripherals_to_properties(vec_peripherals).await.unwrap();
+                }
+                let opt_filter = filter.unwrap();
+                let mut peripherals = self.get_peripherals_by_filter(Some(vec_peripherals), &opt_filter).await.unwrap();
+
+                map_peripherals_to_device_info(Vec::from_iter(peripherals.iter())).await
+            }
+            _ => {
+                panic!("error to get peripherals")
+            }
+        }
     }
 }
 
@@ -154,11 +199,10 @@ impl BleRepo for BleCore {
     }
     fn list_devices(&mut self, secs: Option<u64>, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>
     {
-        let mut adapt_option = self.get_adapter().clone();
+        let adapt_option = self.get_adapter().clone();
         if adapt_option.is_none() {
             panic!("no adapter was available,please check you device")
         }
-        let my_adapt = adapt_option.unwrap().clone();
         self.start_scan(Some(ScanFilter::default()));
         let sec = if secs.is_none() { 2 } else { secs.unwrap() };
         block_on(async move {
@@ -168,7 +212,7 @@ impl BleRepo for BleCore {
         });
         self.stop_scan();
 
-        block_on(self.find_peripherals(&my_adapt, None))
+        block_on(self.find_peripherals(&(adapt_option.unwrap().clone()), None))
     }
 
     fn start_scan(&mut self, filter: Option<ScanFilter>) {
@@ -185,11 +229,18 @@ impl BleRepo for BleCore {
 
     fn connect(&mut self, filter: FilterBleDevice) -> Result<()> {
         block_on(async {
-            let peripheral = self.get_peripherals_by_filter(&filter).await.unwrap();
-            peripheral.connect().await;
-            self.ble_device = Some(peripheral);
-        });
-        Ok(())
+            let peripheral = self.get_peripheral_by_filter(None, &filter).await.unwrap();
+            let res = peripheral.connect().await;
+            match res {
+                Ok(()) => {
+                    self.ble_device = Some(peripheral);
+                    Ok(())
+                }
+                _ => {
+                    panic!("error")
+                }
+            }
+        })
     }
 
     fn disconnect(&mut self) -> Result<()> {
@@ -197,17 +248,24 @@ impl BleRepo for BleCore {
             let peripheral = self.ble_device.as_ref().unwrap().clone();
             self.ble_device = None;
             return peripheral.disconnect().await;
-        });
-        Ok(())
+        })
     }
 
     fn is_connected(&mut self, device: &DeviceInfo) -> Result<bool> {
-        block_on(async {
-            self.get_peripherals_by_filter(&FilterBleDevice {
+        let is_connected = block_on(async {
+            let result = self.get_peripheral_by_filter(None, &FilterBleDevice {
                 name: FilterType::byAdr,
                 value: device.adr.clone(),
-            }).await;
+            }).await.unwrap().is_connected().await;
+            match result {
+                Ok(connected) => {
+                    connected
+                }
+                _ => {
+                    false
+                }
+            }
         });
-        Ok(false)
+        Ok(is_connected)
     }
 }

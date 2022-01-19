@@ -10,20 +10,10 @@ use futures::future::join_all;
 
 use crate::models::device_info::*;
 
-pub async fn transform_peripherals_to_properties(adapter: &Adapter) -> Result<Vec<DeviceInfo>, Error> {
-    let adapter = adapter.clone();
-    let peripherals_result = adapter.peripherals().await;
-    match peripherals_result {
-        Ok(result) => {
-            let peripherals = result;
-            let vec_peripherals = Vec::from_iter(peripherals.iter());
-            let properties = map_peripherals_to_device_info(vec_peripherals).await;
-            return Ok(properties);
-        }
-        _ => {
-            panic!("error to get peripherals")
-        }
-    };
+pub async fn transform_peripherals_to_properties(peripherals: Vec<Peripheral>) -> Result<Vec<DeviceInfo>, Error> {
+    let vec_peripherals = Vec::from_iter(peripherals.iter());
+    let properties = map_peripherals_to_device_info(vec_peripherals).await;
+    return Ok(properties);
 }
 
 pub async fn get_list_properties_from_peripheral(vec_peripherals: Vec<&Peripheral>) -> Vec<PeripheralProperties> {

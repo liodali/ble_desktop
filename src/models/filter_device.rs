@@ -12,7 +12,7 @@ pub struct FilterBleDevice {
 
 
 impl FilterBleDevice {
-    pub fn isSame(&self, first: DeviceInfo, second: DeviceInfo) -> Result<bool,()> {
+    pub fn is_same(&self, first: DeviceInfo, second: DeviceInfo) -> Result<bool,()> {
         match self.name {
             FilterType::byName => {
                 return Ok(first.name == second.name);

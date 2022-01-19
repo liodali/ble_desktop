@@ -17,8 +17,8 @@ impl DeviceInfo {
             name,
             adr,
             is_connected: match is_connected {
-                Some(isConnected) => {
-                    isConnected
+                Some(connected) => {
+                    connected
                 }
                 _ => {
                     false

@@ -1,13 +1,8 @@
 extern crate futures;
 
-
-use std::{io, thread};
 use std::ops::Deref;
 use std::sync::Arc;
 
-use futures::executor::block_on;
-use tokio::runtime::Builder as TokioBuilder;
-use tokio::runtime::Runtime;
 
 use ble_desktop::models::ble_core::{BleCore, BleRepo};
 
@@ -29,7 +24,7 @@ fn main() {
         instantiate();
         let mut ble = BleCore::get_instance().unwrap().deref().clone();
         let adapts = ble.get_adapters().unwrap();
-        let mut iters_adapts = adapts.into_iter();
+        let  iters_adapts = adapts.into_iter();
         println!("len {}", iters_adapts.len());
         ble.select_default_adapter();
         let devices = ble.list_devices(Some(2),None);
