@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 import 'package:dart_ble_desktop/src/models/device.dart';
-import 'package:ffi/ffi.dart';
 import 'dart:ffi';
 import 'package:flutter/material.dart';
 
@@ -32,7 +30,6 @@ abstract class BluetoothCore {
 
   static close() {
     BleFFI.close();
-    ;
   }
 
   BluetoothCore.setUp() {
@@ -58,8 +55,8 @@ class BluetoothCoreImpl extends BluetoothCore {
     final sendPort = singleCompletePort(completer);
     _bleFFI.getListDevices(ptr, sendPort.nativePort, seconds: secondsWait);
     final resultJson = await completer.future;
-    print(resultJson);
-    final List jsonDevice = jsonDecode(resultJson);
+    final res = resultJson;
+    final List jsonDevice = jsonDecode(res);
     return (jsonDevice).map((e) => Device.fromMap(e)).toList();
   }
 }

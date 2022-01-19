@@ -8,7 +8,9 @@ void main() async {
 
   test("test get list ble desktop", () async {
     final devices = await bleCore.getListDevices(secondsWait: 1);
+    final device = devices.firstWhere((e) => e.nameDevice.contains("WH-1000XM3"));
     expect(devices.isNotEmpty, true);
+    expect(device.addressDevice, "38:18:4C:BE:EA:7C");
   });
 
   tearDown(() {
