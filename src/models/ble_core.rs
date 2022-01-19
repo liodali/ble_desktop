@@ -229,6 +229,12 @@ impl BleRepo for BleCore {
 
     fn connect(&mut self, filter: FilterBleDevice) -> Result<()> {
         block_on(async {
+            match self.ble_device {
+                Some(device) => {
+                    device.disconnect().await;
+                    self.ble_device = None;
+                }
+            }
             let peripheral = self.get_peripheral_by_filter(None, &filter).await.unwrap();
             let res = peripheral.connect().await;
             match res {
@@ -245,9 +251,16 @@ impl BleRepo for BleCore {
 
     fn disconnect(&mut self) -> Result<()> {
         block_on(async {
-            let peripheral = self.ble_device.as_ref().unwrap().clone();
-            self.ble_device = None;
-            return peripheral.disconnect().await;
+            match self.ble_device {
+                Some(device) => {
+                    let peripheral = self.ble_device.as_ref().unwrap().clone();
+                    self.ble_device = None;
+                    return peripheral.disconnect().await;
+                }
+                _ => {
+                    Ok(())
+                }
+            }
         })
     }
 

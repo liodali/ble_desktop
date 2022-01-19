@@ -8,3 +8,4 @@ Cargo.lock
 /dart-ffi/build/test_cbindgen.toml.txt
 /dart-ffi/build/binding.h
 /dart-ffi/build/dart_ble_ffi.dart
+/packages/dart_ble_desktop/.vscode/launch.json
