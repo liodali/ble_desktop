@@ -200,18 +200,17 @@ impl BleRepo for BleCore {
     fn list_devices(&mut self, secs: Option<u64>, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>
     {
         let adapt_option = self.get_adapter().clone();
-        if adapt_option.is_none() {
-            panic!("no adapter was available,please check you device")
-        }
+        // if adapt_option.is_none() {
+        //     panic!("no adapter was available,please check you device")
+        // }
         self.start_scan(Some(ScanFilter::default()));
         let sec = if secs.is_none() { 2 } else { secs.unwrap() };
         block_on(async move {
-            let sec = sec;
-            std::thread::sleep(std::time::Duration::from_secs(sec));
+            let sec = &sec;
+            std::thread::sleep(std::time::Duration::from_secs(*sec));
             //sleep_fn(sec)
         });
         self.stop_scan();
-
         block_on(self.find_peripherals(&(adapt_option.unwrap().clone()), None))
     }
 
@@ -229,17 +228,19 @@ impl BleRepo for BleCore {
 
     fn connect(&mut self, filter: FilterBleDevice) -> Result<()> {
         block_on(async {
-            match self.ble_device {
+            let ble_device = &self.ble_device;
+            match ble_device {
                 Some(device) => {
                     device.disconnect().await;
-                    self.ble_device = None;
+                    self.ble_device.as_ref().or(None);
                 }
+                _ => {}
             }
             let peripheral = self.get_peripheral_by_filter(None, &filter).await.unwrap();
             let res = peripheral.connect().await;
             match res {
                 Ok(()) => {
-                    self.ble_device = Some(peripheral);
+                    self.ble_device.as_ref().insert(&peripheral);
                     Ok(())
                 }
                 _ => {
@@ -251,10 +252,11 @@ impl BleRepo for BleCore {
 
     fn disconnect(&mut self) -> Result<()> {
         block_on(async {
-            match self.ble_device {
+            let ble_device = &self.ble_device;
+            match ble_device {
                 Some(device) => {
-                    let peripheral = self.ble_device.as_ref().unwrap().clone();
-                    self.ble_device = None;
+                    let peripheral = device;
+                    self.ble_device.as_ref().or(None);
                     return peripheral.disconnect().await;
                 }
                 _ => {

@@ -77,19 +77,26 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64, s
     rt.spawn(async move {
         let ble_core = ble_core;
         let mut instance = ble_core.0.read().read();
-        match instance.get_adapter().is_none() {
-            /*Some(adpt)*/ false => {
-                println!("one adapter was selected");
+        let result = match instance.get_adapter().is_none() {
+            false => {
+                let devices = instance.list_devices(Some(seconds), None);
+                devices
             }
             _ => {
                 println!("no adapter was selected");
+                block_on(async {
+                    Isolate::new(port).task(async {
+                        "{\"err\":\"no adapter was selected\"}"
+                    }).await;
+                });
+                return;
             }
-        }
-        let devices = instance.list_devices(Some(seconds), None);
+        };
         block_on(async {
             Isolate::new(port).task(
                 async {
-                    map_device_to_json(devices)
+                    println!("result ready");
+                    map_device_to_json(result)
                 }
             ).await;
         })
@@ -104,9 +111,21 @@ pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, 
     rt.spawn(async move {
         let ble_core = ble_core;
         let mut instance = ble_core.0.read().read();
-        instance.connect(FilterBleDevice {
+        let result = instance.connect(FilterBleDevice {
             name: FilterType::byAdr,
             value: adrDevice.to_string(),
-        })
+        });
+        match result {
+            Ok(r) => {
+                Isolate::new(port).post({
+                    1
+                });
+            }
+            _ => {
+                Isolate::new(port).post({
+                    -1
+                });
+            }
+        }
     });
 }
