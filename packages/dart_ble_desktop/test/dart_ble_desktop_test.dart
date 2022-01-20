@@ -1,5 +1,5 @@
+import 'package:dart_ble_desktop/src/models/device.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:dart_ble_desktop/dart_ble_desktop.dart';
 
 void main() async {
@@ -8,9 +8,21 @@ void main() async {
 
   test("test get list ble desktop", () async {
     final devices = await bleCore.getListDevices(secondsWait: 1);
-    final device = devices.firstWhere((e) => e.nameDevice.contains("WH-1000XM3"));
+    const String name = String.fromEnvironment("device-name", defaultValue: "");
+
+    final Device? device =
+        devices.firstWhere((e) => e.nameDevice.contains(name));
+    if (device == null) {
+      assert(false, "device not found");
+    }
     expect(devices.isNotEmpty, true);
-    expect(device.addressDevice, "38:18:4C:BE:EA:7C");
+    expect(device != null, true);
+    String adr = const String.fromEnvironment("device-adr", defaultValue: "");
+    if (adr.isEmpty) {
+      assert(false, "should check env to set device-adr");
+    }
+    expect(device!.addressDevice, adr);
+    expect(device.nameDevice, name);
   });
 
   tearDown(() {

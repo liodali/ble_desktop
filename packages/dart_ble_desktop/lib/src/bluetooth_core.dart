@@ -5,6 +5,7 @@ import 'dart:ffi';
 import 'package:flutter/material.dart';
 
 import 'common/isolate_helper.dart';
+import 'models/exceptions.dart';
 import 'native/ble_ffi.dart';
 
 int currentIdBleCore = 0;
@@ -56,6 +57,9 @@ class BluetoothCoreImpl extends BluetoothCore {
     _bleFFI.getListDevices(ptr, sendPort.nativePort, seconds: secondsWait);
     final resultJson = await completer.future;
     final res = resultJson;
+    if (res.contains("err")) {
+      throw const NotFoundAdapterSelectedException();
+    }
     final List jsonDevice = jsonDecode(res);
     return (jsonDevice).map((e) => Device.fromMap(e)).toList();
   }
