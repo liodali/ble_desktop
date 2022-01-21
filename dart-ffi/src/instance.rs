@@ -129,3 +129,25 @@ pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, 
         }
     });
 }
+#[no_mangle]
+pub unsafe extern "C" fn disconnect(ble: *mut *const BleCore, port: i64,) {
+    let ble_core = BleCoreSend(ble);
+    let rt = runtime!();
+    rt.spawn(async move {
+        let ble_core = ble_core;
+        let mut instance = ble_core.0.read().read();
+        let result = instance.disconnect();
+        match result {
+            Ok(r) => {
+                Isolate::new(port).post({
+                    1
+                });
+            }
+            _ => {
+                Isolate::new(port).post({
+                    -1
+                });
+            }
+        }
+    });
+}
