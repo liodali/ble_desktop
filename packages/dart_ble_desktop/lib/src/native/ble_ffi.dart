@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
+import 'ffi_helper.dart';
+
 class BleFFI {
   late ffi.DynamicLibrary _dylib;
 
@@ -62,6 +64,22 @@ class BleFFI {
     _bleListDevices(blePointer, port, seconds);
   }
 
+  void connectToDevice(
+    ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+    int port,
+    String address,
+  ) {
+    final adr = address.toNativeUtf8();
+    _connectToDevice(ble, port, adr);
+  }
+
+  void disconnect(
+    ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+    int port,
+  ) {
+    _bleDisconnect(ble, port);
+  }
+
   /// Binding to `allo-isolate` crate
   void storeDartPostCobject(
     ffi.Pointer<
@@ -88,50 +106,19 @@ class BleFFI {
   late final DartBleListDevices _bleListDevices =
       _bleListDevicesLookup.asFunction<DartBleListDevices>();
 
-  late final _store_dart_post_cobject_Dart _store_dart_post_cobject =
-      _dylib.lookupFunction<_store_dart_post_cobject_C,
-          _store_dart_post_cobject_Dart>('store_dart_post_cobject');
+  late final _bleConnectToDeviceLookup =
+      _lookup<ffi.NativeFunction<ConnectToDevice>>('connect_to_device');
+
+  late final DartConnectToDevice _connectToDevice =
+      _bleConnectToDeviceLookup.asFunction<DartConnectToDevice>();
+
+  late final _bleDisconnectFromDeviceLookup =
+      _lookup<ffi.NativeFunction<DisconnectFromDevice>>('disconnect');
+
+  late final DartDisconnectFromDevice _bleDisconnect =
+      _bleDisconnectFromDeviceLookup.asFunction<DartDisconnectFromDevice>();
+
+  late final store_dart_post_cobject_Dart _store_dart_post_cobject = _dylib
+      .lookupFunction<store_dart_post_cobject_C, store_dart_post_cobject_Dart>(
+          'store_dart_post_cobject');
 }
-
-typedef BleInstance = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  ffi.Int64 port,
-);
-
-typedef DartBleCreateInstance = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  int port,
-);
-typedef BleSetDefaultAdapter = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  ffi.Int64 port,
-);
-
-typedef DartBleSetDefaultAdapter = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  int port,
-);
-typedef BleListDevices = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  ffi.Int64 port,
-  ffi.Int64 seconds,
-);
-
-typedef DartBleListDevices = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  int port,
-  int seconds,
-);
-
-typedef _store_dart_post_cobject_C = ffi.Void Function(
-  ffi.Pointer<
-          ffi.NativeFunction<
-              ffi.Int8 Function(ffi.Int64, ffi.Pointer<ffi.Dart_CObject>)>>
-      ptr,
-);
-typedef _store_dart_post_cobject_Dart = void Function(
-  ffi.Pointer<
-          ffi.NativeFunction<
-              ffi.Int8 Function(ffi.Int64, ffi.Pointer<ffi.Dart_CObject>)>>
-      ptr,
-);
