@@ -40,23 +40,23 @@ typedef DartBleListDevices = void Function(
 
 /// binding connectToDevice from ffi to dart
 typedef ConnectToDevice = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   ffi.Int64 port,
   ffi.Pointer<Utf8> address,
 );
 typedef DartConnectToDevice = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
   ffi.Pointer<Utf8> address,
 );
 
 /// binding disconnect method from ffi to dart
 typedef DisconnectFromDevice = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   ffi.Int64 port,
 );
 typedef DartDisconnectFromDevice = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
 );
 

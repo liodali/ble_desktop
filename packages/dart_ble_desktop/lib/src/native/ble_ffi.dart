@@ -65,7 +65,7 @@ class BleFFI {
   }
 
   void connectToDevice(
-    ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
     int port,
     String address,
   ) {
@@ -74,7 +74,7 @@ class BleFFI {
   }
 
   void disconnect(
-    ffi.Pointer<ffi.Pointer<ffi.Int32>> ble,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
     int port,
   ) {
     _bleDisconnect(ble, port);

@@ -44,6 +44,8 @@ abstract class BluetoothCore {
   }
 
   Future<List<Device>> getListDevices({int secondsWait = 2});
+  Future<bool> connect({required String deviceAddress});
+  Future<bool> disconnect();
 }
 
 class BluetoothCoreImpl extends BluetoothCore {
@@ -62,5 +64,26 @@ class BluetoothCoreImpl extends BluetoothCore {
     }
     final List jsonDevice = jsonDecode(res);
     return (jsonDevice).map((e) => Device.fromMap(e)).toList();
+  }
+
+  @override
+  Future<bool> connect({required String deviceAddress}) async {
+    final completer = Completer<int>();
+    final ptr = _bleFFI.blePointer;
+    final sendPort = singleCompletePort(completer);
+    _bleFFI.connectToDevice(ptr, sendPort.nativePort, deviceAddress);
+    final result = await completer.future;
+
+    return result == 1 ? true : false;
+  }
+
+  @override
+  Future<bool> disconnect() async{
+    final completer = Completer<int>();
+    final ptr = _bleFFI.blePointer;
+    final sendPort = singleCompletePort(completer);
+    _bleFFI.disconnect(ptr, sendPort.nativePort);
+    final result = await completer.future;
+    return result == 1 ? true : false;
   }
 }
