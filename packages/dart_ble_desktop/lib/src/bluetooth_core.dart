@@ -43,7 +43,8 @@ abstract class BluetoothCore {
     currentIdBleCore--;
   }
 
-  Future<List<Device>> getListDevices({int secondsWait = 2});
+  Future scanForDevices({int secondsWait = 2});
+  Future<List<Device>> getListDevices();
   Future<bool> connect({required String deviceAddress});
   Future<bool> disconnect();
 }
@@ -52,11 +53,24 @@ class BluetoothCoreImpl extends BluetoothCore {
   BluetoothCoreImpl.setUp() : super.setUp();
 
   @override
-  Future<List<Device>> getListDevices({int secondsWait = 2}) async {
+  Future scanForDevices({int secondsWait = 2}) async {
+    final completer = Completer<int>();
+    final ptr = _bleFFI.blePointer;
+    final sendPort = singleCompletePort(completer);
+    _bleFFI.scanForDevices(ptr, sendPort.nativePort, seconds: secondsWait);
+    final result = await completer.future;
+    if (result == -1) {
+      throw const NotFoundAdapterSelectedException();
+    }
+    print("result for scan :$result ");
+  }
+
+  @override
+  Future<List<Device>> getListDevices() async {
     final completer = Completer<String>();
     final ptr = _bleFFI.blePointer;
     final sendPort = singleCompletePort(completer);
-    _bleFFI.getListDevices(ptr, sendPort.nativePort, seconds: secondsWait);
+    _bleFFI.getListDevices(ptr, sendPort.nativePort);
     final resultJson = await completer.future;
     final res = resultJson;
     if (res.contains("err")) {
@@ -78,7 +92,7 @@ class BluetoothCoreImpl extends BluetoothCore {
   }
 
   @override
-  Future<bool> disconnect() async{
+  Future<bool> disconnect() async {
     final completer = Completer<int>();
     final ptr = _bleFFI.blePointer;
     final sendPort = singleCompletePort(completer);

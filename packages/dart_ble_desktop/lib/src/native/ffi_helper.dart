@@ -23,16 +23,28 @@ typedef DartBleSetDefaultAdapter = void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
 );
-typedef BleListDevices = ffi.Void Function(
+
+typedef BleScanForDevices = ffi.Void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   ffi.Int64 port,
   ffi.Int64 seconds,
 );
 
-typedef DartBleListDevices = void Function(
+typedef DartBleScanForDevices = void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
   int seconds,
+);
+
+
+typedef BleListDevices = ffi.Void Function(
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Int64 port,
+);
+
+typedef DartBleListDevices = void Function(
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  int port,
 );
 
 
