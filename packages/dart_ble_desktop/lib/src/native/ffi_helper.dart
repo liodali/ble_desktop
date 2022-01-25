@@ -24,13 +24,13 @@ typedef DartBleSetDefaultAdapter = void Function(
   int port,
 );
 
-typedef BleScanForDevices = ffi.Void Function(
+typedef BleScanForDevices = ffi.Int64 Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   ffi.Int64 port,
   ffi.Int64 seconds,
 );
 
-typedef DartBleScanForDevices = void Function(
+typedef DartBleScanForDevices = int Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
   int seconds,

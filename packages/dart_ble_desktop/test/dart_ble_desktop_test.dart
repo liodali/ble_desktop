@@ -12,7 +12,7 @@ void main() async {
     await bleCore.scanForDevices(secondsWait: 1);
     final devices = await bleCore.getListDevices();
     print(devices);
-    final Device? device = devices.firstWhere((e) => e.nameDevice == name);
+    final Device? device = devices.firstWhere((e) => e.nameDevice.contains(name));
     if (device == null) {
       assert(false, "device not found");
     }

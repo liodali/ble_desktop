@@ -1,6 +1,5 @@
-use std::borrow::BorrowMut;
-use std::future::Future;
 use std::marker::{Send, Sync};
+use std::mem;
 use std::os::raw::c_char;
 
 use allo_isolate::Isolate;
@@ -11,7 +10,7 @@ use ble_desktop::models::ble_core::{BleCore, BleRepo};
 use ble_desktop::models::filter_device::{FilterBleDevice, FilterType};
 
 use crate::runtime;
-use crate::utils::run_async;
+use crate::utils::ptr_to_string;
 
 struct BleCoreSend(*mut *const BleCore);
 
@@ -71,7 +70,26 @@ pub unsafe extern "C" fn select_default_adapter(ble: *mut *const BleCore, port: 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64, seconds: u64) {
+pub unsafe extern "C" fn searching_devices(ble: *mut *const BleCore, port: i64, seconds: u64) -> i64 {
+    let ble_core = BleCoreSend(ble);
+    let rt = runtime!();
+    rt.spawn(async move {
+        let ble_core = ble_core;
+        let mut instance = ble_core.0.read().read();
+        println!("secs : {s}", s = seconds);
+        instance.scan_for_devices(Some(seconds));
+        let list = instance.get_list_peripherals();
+        instance.set_cache_peripherals(list);
+        ble_core.0.write(&instance);
+        println!("searching was finished succefully");
+        Isolate::new(port).post(1);
+    });
+    return 1;
+}
+
+
+#[no_mangle]
+pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64) {
     let ble_core = BleCoreSend(ble);
     let rt = runtime!();
     rt.spawn(async move {
@@ -79,8 +97,16 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64, s
         let mut instance = ble_core.0.read().read();
         let result = match instance.get_adapter().is_none() {
             false => {
-                let devices = instance.list_devices(Some(seconds), None);
-                devices
+                println!("get list");
+                if instance.get_cache_peripherals().is_empty() {
+                    block_on(async {
+                        Isolate::new(port).task(async {
+                            "{\"err\":\"no peripherals was found,please start search before fetch\"}"
+                        }).await;
+                    });
+                }
+                let devices = instance.list_devices(None);
+                Some(devices)
             }
             _ => {
                 println!("no adapter was selected");
@@ -89,34 +115,36 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64, s
                         "{\"err\":\"no adapter was selected\"}"
                     }).await;
                 });
-                return;
+                None
             }
         };
-        block_on(async {
-            Isolate::new(port).task(
-                async {
-                    println!("result ready");
-                    map_device_to_json(result)
-                }
-            ).await;
-        })
+        if result.is_some() {
+            block_on(async {
+                let devices = result.unwrap();
+                let json_devices = map_device_to_json(devices);
+                println!("result ready");
+                Isolate::new(port).post(json_devices);
+            });
+        }
     });
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, address: *const c_char) {
     let ble_core = BleCoreSend(ble);
-    let adrDevice = address.as_ref().unwrap().to_string();
+    let adr = ptr_to_string(address);
+    let adr_device = adr.to_string();
+    println!("address receive in rust : {a}", a = adr_device);
     let rt = runtime!();
     rt.spawn(async move {
         let ble_core = ble_core;
         let mut instance = ble_core.0.read().read();
         let result = instance.connect(FilterBleDevice {
             name: FilterType::byAdr,
-            value: adrDevice.to_string(),
+            value: adr_device,
         });
         match result {
-            Ok(r) => {
+            Ok(_) => {
                 Isolate::new(port).post({
                     1
                 });
@@ -127,18 +155,20 @@ pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, 
                 });
             }
         }
+        mem::forget(result);
     });
 }
+
 #[no_mangle]
-pub unsafe extern "C" fn disconnect(ble: *mut *const BleCore, port: i64,) {
+pub unsafe extern "C" fn disconnect(ble: *mut *const BleCore, port: i64) {
     let ble_core = BleCoreSend(ble);
     let rt = runtime!();
     rt.spawn(async move {
         let ble_core = ble_core;
-        let mut instance = ble_core.0.read().read();
+        let mut instance = ble_core.0.read().as_ref().unwrap().clone();
         let result = instance.disconnect();
         match result {
-            Ok(r) => {
+            Ok(_) => {
                 Isolate::new(port).post({
                     1
                 });

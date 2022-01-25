@@ -10,34 +10,44 @@ use futures::future::join_all;
 
 use crate::models::device_info::*;
 
-pub async fn transform_peripherals_to_properties(peripherals: Vec<Peripheral>) -> Result<Vec<DeviceInfo>, Error> {
-    let vec_peripherals = Vec::from_iter(peripherals.iter());
-    let properties = map_peripherals_to_device_info(vec_peripherals).await;
-    return Ok(properties);
-}
-
-pub async fn get_list_properties_from_peripheral(vec_peripherals: Vec<&Peripheral>) -> Vec<PeripheralProperties> {
+pub async fn get_list_properties_from_peripheral(vec_peripherals: Vec<Peripheral>) -> Vec<PeripheralProperties> {
     let properties_peripherals = join_all(vec_peripherals.iter().map(
         |p| async {
-            p.to_owned().to_owned().properties().await.unwrap().unwrap()
+            p.to_owned().properties().await.unwrap().unwrap()
         }
     )).await;
     return properties_peripherals;
 }
 
-pub async fn map_peripherals_to_device_info(vec_peripherals: Vec<&Peripheral>) -> Vec<DeviceInfo> {
-    let mut vec_properties = Vec::new();
-    let vec_peripherals = vec_peripherals;
-    let list_connected_state = join_all(vec_peripherals.iter().map(|p|
+pub fn map_peripherals_to_device_info(vec: Vec<Peripheral>) -> Vec<DeviceInfo> {
+    let len = vec.len();
+    let mut vec_properties = Vec::with_capacity(len);
+    let vec_peripherals = Vec::from(vec);
+    println!("clone list");
+    let mut list_connected_state = block_on(async {
+        let mut list_connected_state: Vec<bool> = Vec::with_capacity(len);
+        let vec = vec_peripherals.clone();
+        for peri in vec {
+            let status = peri.is_connected().await.unwrap_or(false);
+            list_connected_state.push(status);
+        };
+        list_connected_state
+    });
+    /*let list_connected_state = join_all(vec_peripherals.iter().map(|p|
         async {
             p.is_connected().await.unwrap()
         }
-    )).await;
-    let properties_peripherals = get_list_properties_from_peripheral(vec_peripherals).await;
+    )).await;*/
+    println!("get properties");
+    let properties_peripherals = block_on(async {
+        let peris = vec_peripherals.to_vec();
+        get_list_properties_from_peripheral(peris).await
+    });
     for (index, p) in properties_peripherals.iter().enumerate() {
         let is_connected = list_connected_state.get(index).unwrap().clone();
         let propertie = p.to_owned();
-        vec_properties.push(DeviceInfo::from(propertie, is_connected))
+        let device = DeviceInfo::from(propertie, is_connected);
+        vec_properties.push(device);
     }
     return vec_properties;
 }

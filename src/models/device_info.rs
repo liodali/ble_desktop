@@ -28,8 +28,12 @@ impl DeviceInfo {
     }
     pub fn from(p: PeripheralProperties, is_connected: bool) -> DeviceInfo {
         let property = p.clone();
+        let name = match property.local_name {
+            Some(name) => { name }
+            _ => { String::from("Unkown") }
+        };
         DeviceInfo::new(
-            property.local_name.unwrap(),
+            name,
             property.address.to_string(),
             Some(is_connected),
         )

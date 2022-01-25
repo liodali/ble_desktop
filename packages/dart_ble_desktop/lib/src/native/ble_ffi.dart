@@ -63,12 +63,12 @@ class BleFFI {
     _bleListDevices(blePointer, port);
   }
 
-  void scanForDevices(
+  int scanForDevices(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
     int port, {
     int seconds = 2,
   }) {
-    _bleForDevices(blePointer, port, seconds);
+   return _bleForDevices(blePointer, port, seconds);
   }
 
   void connectToDevice(
