@@ -1,9 +1,5 @@
-use std::iter::FromIterator;
-
-use btleplug::api::{Central, PeripheralProperties};
+use btleplug::api::PeripheralProperties;
 use btleplug::api::Peripheral as _;
-use btleplug::Error;
-use btleplug::platform::Adapter;
 use btleplug::platform::Peripheral;
 use futures::executor::block_on;
 use futures::future::join_all;
@@ -27,7 +23,9 @@ pub fn map_peripherals_to_device_info(vec: Vec<Peripheral>) -> Vec<DeviceInfo> {
     let mut list_connected_state = block_on(async {
         let mut list_connected_state: Vec<bool> = Vec::with_capacity(len);
         let vec = vec_peripherals.clone();
-        for peri in vec {
+        for (index, peri) in vec.iter().enumerate() {
+            println!("get status of {i}", i = index);
+            let mut peri = peri;
             let status = peri.is_connected().await.unwrap_or(false);
             list_connected_state.push(status);
         };

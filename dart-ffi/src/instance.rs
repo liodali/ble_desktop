@@ -37,7 +37,7 @@ pub unsafe extern "C" fn ble_instance(
         });
     });
 }
-
+/*
 #[no_mangle]
 pub unsafe extern "C" fn select_default_adapter(ble: *mut *const BleCore, port: i64) {
     let ble_core = BleCoreSend(ble);
@@ -68,9 +68,10 @@ pub unsafe extern "C" fn select_default_adapter(ble: *mut *const BleCore, port: 
         }
     });
 }
+*/
 
 #[no_mangle]
-pub unsafe extern "C" fn searching_devices(ble: *mut *const BleCore, port: i64, seconds: u64) -> i64 {
+pub unsafe extern "C" fn searching_devices(ble: *mut *const BleCore, port: i64, seconds: u64) {
     let ble_core = BleCoreSend(ble);
     let rt = runtime!();
     rt.spawn(async move {
@@ -82,9 +83,10 @@ pub unsafe extern "C" fn searching_devices(ble: *mut *const BleCore, port: i64, 
         instance.set_cache_peripherals(list);
         ble_core.0.write(&instance);
         println!("searching was finished succefully");
-        Isolate::new(port).post(1);
+        Isolate::new(port).post({
+            1
+        });
     });
-    return 1;
 }
 
 
@@ -97,14 +99,15 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64) {
         let mut instance = ble_core.0.read().read();
         let result = match instance.get_adapter().is_none() {
             false => {
+                // println!("check cache");
+                // if instance.get_cache_peripherals().is_empty() {
+                //     block_on(async {
+                //         Isolate::new(port).task(async {
+                //             "{\"err\":\"no peripherals was found,please start search before fetch\"}"
+                //         }).await;
+                //     });
+                // }
                 println!("get list");
-                if instance.get_cache_peripherals().is_empty() {
-                    block_on(async {
-                        Isolate::new(port).task(async {
-                            "{\"err\":\"no peripherals was found,please start search before fetch\"}"
-                        }).await;
-                    });
-                }
                 let devices = instance.list_devices(None);
                 Some(devices)
             }

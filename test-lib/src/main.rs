@@ -36,10 +36,10 @@ fn main() {
         ).for_each(
             |e| println!("{}", e)
         );
-        ble.connect(FilterBleDevice {
-            name: FilterType::byAdr,
-            value: "3C:20:F6:EC:31:6C".to_string(),
-        });
-        ble.disconnect();
+        // ble.connect(FilterBleDevice {
+        //     name: FilterType::byAdr,
+        //     value: "3C:20:F6:EC:31:6C".to_string(),
+        // });
+        // ble.disconnect();
     });
 }
