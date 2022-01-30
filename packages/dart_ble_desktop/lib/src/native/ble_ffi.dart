@@ -49,12 +49,14 @@ class BleFFI {
     _bleCreateInstance(blePointer, port);
   }
 
+  /*
   void setDefaultAdapter(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
     int port,
   ) {
     _bleSetDefaultAdapter(blePointer, port);
   }
+  */
 
   void getListDevices(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
@@ -63,12 +65,12 @@ class BleFFI {
     _bleListDevices(blePointer, port);
   }
 
-  int scanForDevices(
+  void scanForDevices(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
     int port, {
     int seconds = 2,
   }) {
-   return _bleForDevices(blePointer, port, seconds);
+    _bleForDevices(blePointer, port, seconds);
   }
 
   void connectToDevice(
@@ -101,13 +103,13 @@ class BleFFI {
       _lookup<ffi.NativeFunction<BleInstance>>('ble_instance');
   late final DartBleCreateInstance _bleCreateInstance =
       _bleCreateInstancePTR.asFunction<DartBleCreateInstance>();
-
+/*
   late final _bleSetDefaultAdapterPTR =
       _lookup<ffi.NativeFunction<BleSetDefaultAdapter>>(
           'select_default_adapter');
   late final DartBleCreateInstance _bleSetDefaultAdapter =
       _bleSetDefaultAdapterPTR.asFunction<DartBleCreateInstance>();
-
+*/
   late final _bleScanForDevicesLookup =
       _lookup<ffi.NativeFunction<BleScanForDevices>>('searching_devices');
   late final DartBleScanForDevices _bleForDevices =

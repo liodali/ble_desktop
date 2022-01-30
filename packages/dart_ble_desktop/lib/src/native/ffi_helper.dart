@@ -14,6 +14,7 @@ typedef DartBleCreateInstance = void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
 );
+/*
 typedef BleSetDefaultAdapter = ffi.Void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   ffi.Int64 port,
@@ -23,14 +24,14 @@ typedef DartBleSetDefaultAdapter = void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
 );
-
-typedef BleScanForDevices = ffi.Int64 Function(
+*/
+typedef BleScanForDevices = ffi.Void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   ffi.Int64 port,
   ffi.Int64 seconds,
 );
 
-typedef DartBleScanForDevices = int Function(
+typedef DartBleScanForDevices = void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
   int port,
   int seconds,

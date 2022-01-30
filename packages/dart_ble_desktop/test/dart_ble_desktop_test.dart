@@ -10,9 +10,11 @@ void main() async {
 
   test("test get list ble desktop", () async {
     await bleCore.scanForDevices(secondsWait: 1);
+    await Future.delayed(const Duration(milliseconds: 500), () async {});
     final devices = await bleCore.getListDevices();
     print(devices);
-    final Device? device = devices.firstWhere((e) => e.nameDevice.contains(name));
+    final Device? device =
+        devices.firstWhere((e) => e.nameDevice.contains(name));
     if (device == null) {
       assert(false, "device not found");
     }
@@ -26,6 +28,8 @@ void main() async {
   });
 
   test("test connection", () async {
+    await Future.delayed(const Duration(milliseconds: 500), () async {});
+
     print("adr from dart : $adr");
     final isConnected = await bleCore.connect(deviceAddress: adr);
     expect(isConnected, true);

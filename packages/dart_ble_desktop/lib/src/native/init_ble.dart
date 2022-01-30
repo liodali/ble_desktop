@@ -11,7 +11,7 @@ Future initBluetoothDesktop(String pathLib) async {
   BluetoothCore.init(pathLib);
   BleFFI.instance.storeDartPostCobject(ffi.NativeApi.postCObject);
   await _initInstanceNative();
-  await _setDefaultAdapter();
+  //await _setDefaultAdapter();
 }
 
 Future _initInstanceNative() async {
@@ -25,7 +25,7 @@ Future _initInstanceNative() async {
   print("res init instance: $result");
   //malloc.free(bleCorePtrPtr);
 }
-
+/*
 Future _setDefaultAdapter() async {
   final ptr = BleFFI.instance.blePointer;
   final completer = Completer<int>();
@@ -35,3 +35,4 @@ Future _setDefaultAdapter() async {
   print("res set adapter: $result");
   //malloc.free(bleCorePtrPtr);
 }
+*/

@@ -54,12 +54,15 @@ class BluetoothCoreImpl extends BluetoothCore {
 
   @override
   Future scanForDevices({int secondsWait = 2}) async {
-    final completer = Completer<void>();
+    final completer = Completer<int>();
     final ptr = _bleFFI.blePointer;
     final sendPort = singleCompletePort(completer);
-    final result =
-        _bleFFI.scanForDevices(ptr, sendPort.nativePort, seconds: secondsWait);
-    await completer.future;
+    _bleFFI.scanForDevices(
+      ptr,
+      sendPort.nativePort,
+      seconds: secondsWait,
+    );
+    final result = await completer.future;
     if (result == -1) {
       throw const NotFoundAdapterSelectedException();
     }
