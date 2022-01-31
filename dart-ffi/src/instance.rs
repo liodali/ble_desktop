@@ -37,41 +37,13 @@ pub unsafe extern "C" fn ble_instance(
         });
     });
 }
-/*
-#[no_mangle]
-pub unsafe extern "C" fn select_default_adapter(ble: *mut *const BleCore, port: i64) {
-    let ble_core = BleCoreSend(ble);
-    let rt = runtime!();
-    rt.spawn(async move {
-        let ble_core = ble_core;
-
-        let mut ble_instance = ble_core.0.read().read();
-        let adapts = ble_instance.get_adapters().unwrap();
-        let mut iters_adapts = adapts.into_iter();
-        let adapt = iters_adapts.nth(0).unwrap();
-        ble_instance.set_adapter(&adapt);
-        ble_core.0.write(&ble_instance);
-
-        // let ble_instance = ble_core.0.read().as_ref().unwrap().clone();
-        //  let mut bleC = BleCore::get_instance().unwrap().deref().clone();
-        match ble_instance.get_adapter().is_none() {
-            false => {
-                Isolate::new(port).post({
-                    1
-                });
-            }
-            _ => {
-                Isolate::new(port).post({
-                    -1
-                });
-            }
-        }
-    });
-}
-*/
 
 #[no_mangle]
-pub unsafe extern "C" fn searching_devices(ble: *mut *const BleCore, port: i64, seconds: u64) {
+pub unsafe extern "C" fn searching_devices(
+    ble: *mut *const BleCore,
+    port: i64,
+    seconds: u64,
+) {
     let ble_core = BleCoreSend(ble);
     let rt = runtime!();
     rt.spawn(async move {
@@ -97,37 +69,12 @@ pub unsafe extern "C" fn get_list_devices(ble: *mut *const BleCore, port: i64) {
     rt.spawn(async move {
         let ble_core = ble_core;
         let mut instance = ble_core.0.read().read();
-        let result = match instance.get_adapter().is_none() {
-            false => {
-                // println!("check cache");
-                // if instance.get_cache_peripherals().is_empty() {
-                //     block_on(async {
-                //         Isolate::new(port).task(async {
-                //             "{\"err\":\"no peripherals was found,please start search before fetch\"}"
-                //         }).await;
-                //     });
-                // }
-                println!("get list");
-                let devices = instance.list_devices(None);
-                Some(devices)
-            }
-            _ => {
-                println!("no adapter was selected");
-                block_on(async {
-                    Isolate::new(port).task(async {
-                        "{\"err\":\"no adapter was selected\"}"
-                    }).await;
-                });
-                None
-            }
-        };
-        if result.is_some() {
-            block_on(async {
-                let devices = result.unwrap();
-                let json_devices = map_device_to_json(devices);
-                println!("result ready");
-                Isolate::new(port).post(json_devices);
-            });
+        println!("get list");
+        let devices = instance.list_devices(None);
+        if !devices.is_empty() {
+            let json_devices = map_device_to_json(devices);
+            println!("result ready");
+            Isolate::new(port).post(json_devices);
         }
     });
 }
@@ -142,23 +89,37 @@ pub unsafe extern "C" fn connect_to_device(ble: *mut *const BleCore, port: i64, 
     rt.spawn(async move {
         let ble_core = ble_core;
         let mut instance = ble_core.0.read().read();
-        let result = instance.connect(FilterBleDevice {
+        println!("clone list peri");
+        let list = instance.get_cache_peripherals();
+        let filter = FilterBleDevice {
             name: FilterType::byAdr,
             value: adr_device,
-        });
-        match result {
-            Ok(_) => {
-                Isolate::new(port).post({
-                    1
-                });
+        };
+        let peripheral_opt = instance.get_peripheral_by_filter(list, &filter).await;
+        match peripheral_opt {
+            Some(ref peri) => {
+                let result = instance.connect(peri.clone());
+                match result {
+                    Ok(_) => {
+                        Isolate::new(port).post({
+                            1
+                        });
+                    }
+                    _ => {
+                        Isolate::new(port).post({
+                            -1
+                        });
+                    }
+                }
+                mem::forget(result);
             }
             _ => {
                 Isolate::new(port).post({
-                    -1
+                    -400
                 });
             }
         }
-        mem::forget(result);
+        mem::forget(peripheral_opt);
     });
 }
 

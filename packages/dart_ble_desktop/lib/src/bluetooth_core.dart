@@ -40,7 +40,10 @@ abstract class BluetoothCore {
   }
   @mustCallSuper
   dispose() {
-    currentIdBleCore--;
+    if (_instances.containsKey(currentIdBleCore)) {
+      _instances[currentIdBleCore]?.dispose();
+      currentIdBleCore--;
+    }
   }
 
   Future scanForDevices({int secondsWait = 2});

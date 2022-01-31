@@ -41,7 +41,7 @@ pub trait BleRepo: Send + Sync {
     fn list_devices(&mut self, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>;
     //fn start_scan(&mut self, filter: Option<ScanFilter>);
     //fn stop_scan(&mut self);
-    fn connect(&mut self, filter: FilterBleDevice) -> Result<bool>;
+    fn connect(&mut self, peripheral: StructPeripheral) -> Result<bool>;
     fn disconnect(&mut self) -> Result<bool>;
     fn is_connected(&mut self, device: &DeviceInfo) -> Result<bool>;
     //async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo>;
@@ -131,7 +131,7 @@ impl BleCore {
         self.ble_adapter.clone()
     }
 
-    async fn get_peripheral_by_filter(&mut self, peripheral_list: Vec<StructPeripheral>, filter: &FilterBleDevice) -> Option<StructPeripheral> {
+    pub async fn get_peripheral_by_filter(&mut self, peripheral_list: Vec<StructPeripheral>, filter: &FilterBleDevice) -> Option<StructPeripheral> {
         let mut peripherals = peripheral_list.clone();
         let mut vec_peripherals = Vec::from(peripherals);
         println!("filter peripherals by filter: {v}", v = filter.value.clone());
@@ -270,7 +270,10 @@ impl BleRepo for BleCore {
 
             &*self.ble_cache.ble_list_peripherals
         };
-        vec.to_vec().clone()
+        println!("get");
+        let list = vec.to_vec();
+        println!("copy");
+        list
         //self.ble_cache.ble_list_peripherals.unwrap().clone()
     }
 
@@ -300,7 +303,9 @@ impl BleRepo for BleCore {
     }
 
     fn get_list_peripherals(&mut self) -> Vec<StructPeripheral> {
+        println!("call $get_adapter in $get_list_peripherals");
         let adapt_option = self.get_adapter().unwrap();
+        println!("finish call $get_adapter in $get_list_peripherals");
         return block_on(async {
             let mut central = &(adapt_option.clone());
             let result_peripherals = central.peripherals().await.unwrap();
@@ -310,30 +315,29 @@ impl BleRepo for BleCore {
 
     fn list_devices(&mut self, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>
     {
+        println!("check cache");
         if self.get_cache_peripherals().is_empty() {
             return Vec::new();
         }
         self.find_peripherals(filter)
     }
 
-    fn connect(&mut self, filter: FilterBleDevice) -> Result<bool> {
+    fn connect(&mut self, peripheral: StructPeripheral) -> Result<bool> {
         println!("start connection");
-        print!("clone list peri");
-        let result_peripherals = self.get_cache_peripherals();
-        println!("get ble device connected");
+        /*println!("get ble device connected");
         let ble_device = self.ble_cache.ble_device.as_ref();
         println!("check if any device is connected");
         match ble_device {
             Some(_) => {
                 println!("we found connected device,now disconnect ");
                 //device.disconnect().await.expect("we cannot disconnect");
-                self.ble_cache.ble_device.as_ref().or(None);
+                self.ble_cache.ble_device = None;
             }
             _ => {}
-        }
+        }*/
         let result = block_on(async {
             println!("search for peri");
-            let peripheral = self.get_peripheral_by_filter(result_peripherals, &filter).await.unwrap();
+            let peripheral = peripheral;
             println!("get peripheral to connect");
             let res = peripheral.connect().await;
             match res {
