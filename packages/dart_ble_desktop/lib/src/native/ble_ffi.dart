@@ -29,6 +29,7 @@ class BleFFI {
   static late BleFFI instance;
 
   late ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer;
+  late ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer;
 
   static void init(String pathLib) {
     instance = BleFFI._(pathLib);
@@ -36,10 +37,16 @@ class BleFFI {
 
   static void close() {
     malloc.free(instance.blePointer);
+    malloc.free(instance.bleCachePointer);
   }
 
   void setBlePointer(ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer) {
     this.blePointer = blePointer;
+  }
+
+  void setBleCachePointer(
+      ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer) {
+    this.bleCachePointer = bleCachePointer;
   }
 
   void createBleInstance(
@@ -47,6 +54,12 @@ class BleFFI {
     int port,
   ) {
     _bleCreateInstance(blePointer, port);
+  }
+
+  void instantiateBleCache(
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
+  ) {
+    _bleCreateInstanceCache(bleCachePointer);
   }
 
   /*
@@ -60,33 +73,37 @@ class BleFFI {
 
   void getListDevices(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
     int port,
   ) {
-    _bleListDevices(blePointer, port);
+    _bleListDevices(blePointer, bleCachePointer, port);
   }
 
   void scanForDevices(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
     int port, {
     int seconds = 2,
   }) {
-    _bleForDevices(blePointer, port, seconds);
+    _bleScanForDevices(blePointer, bleCachePointer, port, seconds);
   }
 
   void connectToDevice(
-    ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
     int port,
     String address,
   ) {
     final adr = address.toNativeUtf8();
-    _connectToDevice(ble, port, adr);
+    _connectToDevice(blePointer, bleCachePointer, port, adr);
   }
 
   void disconnect(
-    ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
+    ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
     int port,
   ) {
-    _bleDisconnect(ble, port);
+    _bleDisconnect(blePointer, bleCachePointer, port);
   }
 
   /// Binding to `allo-isolate` crate
@@ -103,6 +120,12 @@ class BleFFI {
       _lookup<ffi.NativeFunction<BleInstance>>('ble_instance');
   late final DartBleCreateInstance _bleCreateInstance =
       _bleCreateInstancePTR.asFunction<DartBleCreateInstance>();
+
+  late final _bleCacheCreateInstancePTR =
+      _lookup<ffi.NativeFunction<BleInstanceCache>>('instance_cache');
+  late final DartBleCreateInstanceCache _bleCreateInstanceCache =
+      _bleCacheCreateInstancePTR.asFunction<DartBleCreateInstanceCache>();
+
 /*
   late final _bleSetDefaultAdapterPTR =
       _lookup<ffi.NativeFunction<BleSetDefaultAdapter>>(
@@ -112,16 +135,14 @@ class BleFFI {
 */
   late final _bleScanForDevicesLookup =
       _lookup<ffi.NativeFunction<BleScanForDevices>>('searching_devices');
-  late final DartBleScanForDevices _bleForDevices =
+  late final DartBleScanForDevices _bleScanForDevices =
       _bleScanForDevicesLookup.asFunction<DartBleScanForDevices>();
-  
-  
-  
+
   late final _bleListDevicesLookup =
       _lookup<ffi.NativeFunction<BleListDevices>>('get_list_devices');
   late final DartBleListDevices _bleListDevices =
       _bleListDevicesLookup.asFunction<DartBleListDevices>();
-  
+
   late final _bleConnectToDeviceLookup =
       _lookup<ffi.NativeFunction<ConnectToDevice>>('connect_to_device');
 

@@ -1,10 +1,19 @@
 #!/bin/bash
-
+mode=$1
+echo $mode
 case $(uname | tr '[:upper:]' '[:lower:]') in
 linux*)
-  cargo build --release
+  if [ $mode == debug ]
+  then
+     cargo build
+  elif [ $mode == release ]
+  then
+     cargo build --release
+  else
+     exit 0
+  fi
   sleep 1s
-  cp "./target/release/libble_core_dart_ffi.so" "../packages/dart_ble_desktop/dynamicLib/libble_core_dart_ffi.so"
+  cp "./target/$mode/libble_core_dart_ffi.so" "../packages/dart_ble_desktop/dynamicLib/libble_core_dart_ffi.so"
   ;;
 darwin*)
   if [ "$1" = "x64" ]; then

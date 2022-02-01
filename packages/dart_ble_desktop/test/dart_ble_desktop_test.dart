@@ -7,9 +7,10 @@ void main() async {
   BluetoothCore bleCore = BluetoothCoreImpl.setUp();
   const String adr = String.fromEnvironment("device-adr", defaultValue: "");
   const String name = String.fromEnvironment("device-name", defaultValue: "");
+  await bleCore.scanForDevices(secondsWait: 1);
+
   group("test base method in ble core ", () {
     test("test get list ble desktop", () async {
-      await bleCore.scanForDevices(secondsWait: 1);
       await Future.delayed(const Duration(milliseconds: 500), () async {});
       final devices = await bleCore.getListDevices();
       print(devices);
@@ -35,6 +36,4 @@ void main() async {
       expect(isConnected, true);
     });
   });
-
-  bleCore.dispose();
 }
