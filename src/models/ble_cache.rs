@@ -3,11 +3,13 @@ use std::sync::{Arc, RwLock};
 
 use btleplug::platform::Peripheral as StructPeri;
 
+use crate::models::ble_peripherail_detail::DetailPeripheral;
+
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct BleCache {
-    ble_device_connected: Option<StructPeri>,
-    ble_cache_peripherals: Vec<StructPeri>,
+    ble_device_connected: Option<DetailPeripheral>,
+    ble_cache_peripherals: Vec<DetailPeripheral>,
 }
 
 unsafe impl Send for BleCache {}
@@ -22,7 +24,7 @@ impl BleCache {
             ble_cache_peripherals: Vec::new(),
         };
     }
-    pub fn from_data(device: Option<StructPeri>, list: Vec<StructPeri>) -> Self {
+    pub fn from_data(device: Option<DetailPeripheral>, list: Vec<DetailPeripheral>) -> Self {
         return Self {
             ble_device_connected: device,
             ble_cache_peripherals: Vec::from(list),
@@ -30,12 +32,13 @@ impl BleCache {
     }
 
 
-    pub fn get_device(&self) -> Option<StructPeri> {
+    pub fn get_device(&self) -> Option<DetailPeripheral> {
         self.ble_device_connected.clone()
     }
 
-    pub fn get_cache_peripherals(&self) -> Vec<StructPeri> {
-        let list = self.ble_cache_peripherals.clone();
+    pub fn get_cache_peripherals(&self) -> &Vec<DetailPeripheral> {
+        println!("clone cache from $get_cache_peripherals");
+        let list = &self.ble_cache_peripherals;
         println!("get cache list from $get_cache_peripherals");
         return list;
     }

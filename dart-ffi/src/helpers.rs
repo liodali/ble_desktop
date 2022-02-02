@@ -7,8 +7,8 @@ unsafe impl Send for BleCacheSend {}
 unsafe impl Sync for BleCacheSend {}
 
 
-pub struct UnMutableBleCacheSend(pub(crate) *const BleCache);
+pub struct UnMutableBleSend<T>(pub(crate) *const T);
 
-unsafe impl Send for UnMutableBleCacheSend {}
+unsafe impl <T> Send for UnMutableBleSend<T> {}
 
-unsafe impl Sync for UnMutableBleCacheSend {}
+unsafe impl <T> Sync for UnMutableBleSend<T> {}

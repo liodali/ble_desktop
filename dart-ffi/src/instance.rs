@@ -6,13 +6,15 @@ use std::sync::{Arc, RwLock};
 
 use allo_isolate::Isolate;
 use futures::executor::block_on;
+use futures::future::join_all;
 
 use ble_desktop::common::utils::*;
 use ble_desktop::models::ble_cache::BleCache;
 use ble_desktop::models::ble_core::{BleCore, BleRepo};
+use ble_desktop::models::ble_peripherail_detail::DetailPeripheral;
 use ble_desktop::models::filter_device::{FilterBleDevice, FilterType};
 
-use crate::helpers::{BleCacheSend, UnMutableBleCacheSend};
+use crate::helpers::{BleCacheSend, UnMutableBleSend};
 use crate::runtime;
 use crate::utils::ptr_to_string;
 
@@ -34,9 +36,7 @@ pub unsafe extern "C" fn ble_instance(
         let ble_core_send = ble_core_send;
         let instance = BleCore::create().unwrap();
         ble_core_send.0.write(instance.as_ref());
-        Isolate::new(port).post({
-            1
-        });
+        Isolate::new(port).post(1);
     });
 }
 
@@ -46,7 +46,6 @@ pub unsafe extern "C" fn instance_cache(cache: *mut *const BleCache) {
     let instance = &mut Arc::new(BleCache::create_empty());
     ble_cache_instance.0.write(instance.as_ref());
     let n_inst = ble_cache_instance.0.read().read();
-    println!("check size of  empty list cached,{}", n_inst.get_cache_peripherals().len());
     println!("cache instantiated");
 }
 
@@ -63,22 +62,19 @@ pub unsafe extern "C" fn searching_devices(
     rt.block_on(async move {
         let ble_core = ble_core;
         let ble_cache = ble_cache;
-        let mut instance = ble_core.0.read().read();
+        let instance = ble_core.0.read().read();
         println!("waiting for secs : {s}", s = seconds);
         instance.scan_for_devices(Some(seconds));
-        let list = instance.get_list_peripherals();
+        let list = instance.get_list_peripherals_with_detail();
         println!("list to be cached {}", list.len());
-        let first = list.first().unwrap().clone();
-        let is_ctx = get_status_from_peri(first).await.unwrap();
-        println!("status of first elem {}", is_ctx);
         let mut cache_vec = Vec::from(list.clone());
         let new_cache = Arc::new(BleCache::from_data(None, cache_vec));
         //cache_instance.set_cache_peripherals(list);
         ble_cache.0.write(new_cache.as_ref());
-        Isolate::new(port).post(1);
+        let success: i32 = 1;
+        Isolate::new(port).post(success);
         println!("searching was finished succefully");
     });
-
 }
 
 
@@ -88,29 +84,24 @@ pub unsafe extern "C" fn get_list_devices(
     cache: *mut *const BleCache,
     port: i64,
 ) {
-    let ble_core = BleCoreSend(ble);
+    //let ble_core = BleCoreSend(ble);
     let ble_cache = BleCacheSend(cache);
     let ble_cache_instance = ble_cache.0.read().read();
     let list_peris = ble_cache_instance.get_cache_peripherals();
     let rt = runtime!();
     rt.block_on(async move {
-        let ble_core = ble_core;
-        let mut instance = ble_core.0.read().read();
-        block_on(async{
-            instance.start_scan(None).await;
-            std::thread::sleep(std::time::Duration::from_secs(1));
-        });
-        let list_peris = instance.get_list_peripherals();
-        println!("len {}", list_peris.len());
-        let first = list_peris.first().unwrap().clone();
-        let is_ctx = block_on(async { get_status_from_peri(first.clone()).await }).unwrap();
-        println!("status of first elem {}", is_ctx);
+        let list_peris = list_peris;
+        // let ble_core = ble_core;
+        // let mut instance = ble_core.0.read().read();
+        println!("len cached{}", list_peris.len());
         println!("call $list_devices");
         if list_peris.is_empty() {
             Isolate::new(port).post("[]");
         } else {
-            let len = list_peris.len();
-            let devices = instance.list_devices(list_peris, None);
+            let devices = join_all(list_peris.iter().map(|d|
+                async { d.clone().to_device_info() }
+            )).await;
+            //let devices = instance.list_devices(peris, None);
             if !devices.is_empty() {
                 let json_devices = map_device_to_json(devices);
                 println!("result ready");
@@ -144,31 +135,28 @@ pub unsafe extern "C" fn connect_to_device(
             name: FilterType::by_adr,
             value: adr_device,
         };
-        let peripheral_opt = instance.get_peripheral_by_filter(
-            list,
-            &filter,
-        ).await;
+        let peripheral_opt = list.iter().filter(|d| {
+            d.get_properties().address.to_string().contains(&filter.value)
+        }).nth(0);
         match peripheral_opt {
-            Some(ref peri) => {
-                let result = instance.connect(peri.clone());
+            Some(ref detail_peri) => {
+                let peri = detail_peri.get_peripheral().clone();
+                let result = instance.connect(peri);
                 match result {
                     Ok(_) => {
-                        Isolate::new(port).post({
-                            1
-                        });
+                        let success: i32 = 1;
+                        Isolate::new(port).post(success);
                     }
                     _ => {
-                        Isolate::new(port).post({
-                            -1
-                        });
+                        let fail: i32 = -1;
+                        Isolate::new(port).post(fail);
                     }
                 }
                 mem::forget(result);
             }
             _ => {
-                Isolate::new(port).post({
-                    -400
-                });
+                let fail: i32 = -400;
+                Isolate::new(port).post(fail);
             }
         }
         mem::forget(peripheral_opt);
@@ -190,19 +178,22 @@ pub unsafe extern "C" fn disconnect(
         let mut instance = ble_core.0.read().read();//.as_ref().unwrap().clone();
         let mut cache_instance = ble_cache.0.read().read();
         println!("clone list peri");
-        let peri = cache_instance.get_device().unwrap();
+        let peri = cache_instance.get_device().unwrap().get_peripheral();
         let result = instance.disconnect(peri);
         match result {
             Ok(_) => {
-                let n_cache_instance = BleCache::from_data(None, cache_instance.get_cache_peripherals());
+                let list_cache = cache_instance.get_cache_peripherals().clone();
+                let n_cache_instance = BleCache::from_data(None, list_cache);
                 ble_cache.0.write(&n_cache_instance);
                 Isolate::new(port).post({
-                    1
+                    let succes_code: i32 = 1;
+                    succes_code
                 });
             }
             _ => {
                 Isolate::new(port).post({
-                    -1
+                    let err_code: i32 = -1;
+                    err_code
                 });
             }
         }
