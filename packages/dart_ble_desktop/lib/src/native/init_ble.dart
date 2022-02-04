@@ -20,12 +20,8 @@ Future _initInstanceNative() async {
   final bleFfi = BleFFI.instance;
   bleFfi.setBlePointer(bleCorePtrPtr);
   bleFfi.setBleCachePointer(bleCachePtrPtr);
-  final completer = Completer<int>();
-  final sendPort = singleCompletePort(completer);
-  bleFfi.createBleInstance(bleCorePtrPtr, sendPort.nativePort);
+  bleFfi.createBleInstance(bleCorePtrPtr);
   bleFfi.instantiateBleCache(bleCachePtrPtr);
-  final result = await completer.future;
-  print("res init instance: $result");
   //malloc.free(bleCorePtrPtr);
 }
 /*

@@ -51,9 +51,8 @@ class BleFFI {
 
   void createBleInstance(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
-    int port,
   ) {
-    _bleCreateInstance(blePointer, port);
+    _bleCreateInstance(blePointer);
   }
 
   void instantiateBleCache(
@@ -70,22 +69,21 @@ class BleFFI {
     _bleSetDefaultAdapter(blePointer, port);
   }
   */
-
-  void getListDevices(
-    ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
-    ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
-    int port,
-  ) {
-    _bleListDevices(blePointer, bleCachePointer, port);
-  }
-
   void scanForDevices(
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
     int port, {
     int seconds = 2,
   }) {
-    _bleScanForDevices(blePointer, bleCachePointer, port, seconds);
+    _bleScanForDevices(blePointer.value, bleCachePointer, port, seconds);
+  }
+
+  void getListDevices(
+    //ffi.Pointer<ffi.Pointer<ffi.NativeType>> blePointer,
+    ffi.Pointer<ffi.NativeType> bleCachePointer,
+    int port,
+  ) {
+    _bleListDevices(bleCachePointer, port);
   }
 
   void connectToDevice(
@@ -95,7 +93,7 @@ class BleFFI {
     String address,
   ) {
     final adr = address.toNativeUtf8();
-    _connectToDevice(blePointer, bleCachePointer, port, adr);
+    _connectToDevice(blePointer.value, bleCachePointer, port, adr);
   }
 
   void disconnect(
@@ -103,7 +101,7 @@ class BleFFI {
     ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCachePointer,
     int port,
   ) {
-    _bleDisconnect(blePointer, bleCachePointer, port);
+    _bleDisconnect(blePointer.value, bleCachePointer, port);
   }
 
   /// Binding to `allo-isolate` crate

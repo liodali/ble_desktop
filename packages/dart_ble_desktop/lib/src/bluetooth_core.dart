@@ -81,8 +81,7 @@ class BluetoothCoreImpl extends BluetoothCore {
     final cachePTR = _bleFFI.bleCachePointer;
     final sendPort = singleCompletePort(completer);
     _bleFFI.getListDevices(
-      ptr,
-      cachePTR,
+      cachePTR.value,
       sendPort.nativePort,
     );
     final resultJson = await completer.future;
@@ -123,6 +122,9 @@ class BluetoothCoreImpl extends BluetoothCore {
       sendPort.nativePort,
     );
     final result = await completer.future;
+    if (result == -404) {
+      throw Exception("there is no device connected before");
+    }
     return result == 1 ? true : false;
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dart_ble_desktop/src/models/device.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_ble_desktop/dart_ble_desktop.dart';
@@ -8,7 +10,7 @@ void main() async {
   const String adr = String.fromEnvironment("device-adr", defaultValue: "");
   const String name = String.fromEnvironment("device-name", defaultValue: "");
   await bleCore.scanForDevices(secondsWait: 1);
-
+  
   group("test base method in ble core ", () {
     test("test get list ble desktop", () async {
       await Future.delayed(const Duration(milliseconds: 500), () async {});
@@ -33,6 +35,11 @@ void main() async {
 
       print("adr from dart : $adr");
       final isConnected = await bleCore.connect(deviceAddress: adr);
+      expect(isConnected, true);
+    });
+    test("test disconnect", () async {
+      await Future.delayed(const Duration(milliseconds: 500), () async {});
+      final isConnected = await bleCore.disconnect();
       expect(isConnected, true);
     });
   });
