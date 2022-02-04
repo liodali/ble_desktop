@@ -16,13 +16,12 @@ Future initBluetoothDesktop(String pathLib) async {
 
 Future _initInstanceNative() async {
   final bleCorePtrPtr = malloc<ffi.Pointer<ffi.NativeType>>();
+  final bleCachePtrPtr = malloc<ffi.Pointer<ffi.NativeType>>();
   final bleFfi = BleFFI.instance;
   bleFfi.setBlePointer(bleCorePtrPtr);
-  final completer = Completer<int>();
-  final sendPort = singleCompletePort(completer);
-  bleFfi.createBleInstance(bleCorePtrPtr, sendPort.nativePort);
-  final result = await completer.future;
-  print("res init instance: $result");
+  bleFfi.setBleCachePointer(bleCachePtrPtr);
+  bleFfi.createBleInstance(bleCorePtrPtr);
+  bleFfi.instantiateBleCache(bleCachePtrPtr);
   //malloc.free(bleCorePtrPtr);
 }
 /*

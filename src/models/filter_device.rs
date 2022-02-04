@@ -1,9 +1,9 @@
 use crate::models::device_info::*;
 
 pub enum FilterType {
-    byName,
-    byAdr,
-    byStatus,
+    by_name,
+    by_adr,
+    by_status,
 }
 
 pub struct FilterBleDevice {
@@ -15,10 +15,10 @@ pub struct FilterBleDevice {
 impl FilterBleDevice {
     pub fn is_same(&self, first: DeviceInfo, second: DeviceInfo) -> Result<bool, ()> {
         match self.name {
-            FilterType::byName => {
+            FilterType::by_name => {
                 return Ok(first.name == second.name);
             }
-            FilterType::byAdr => {
+            FilterType::by_adr => {
                 return Ok(first.adr == second.adr);
             }
             _ => {

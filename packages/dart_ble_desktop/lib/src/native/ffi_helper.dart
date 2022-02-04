@@ -2,18 +2,22 @@ import 'dart:ffi' as ffi;
 
 import 'package:ffi/ffi.dart';
 
-
-
-
 typedef BleInstance = ffi.Void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  ffi.Int64 port,
 );
 
 typedef DartBleCreateInstance = void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
-  int port,
 );
+
+typedef BleInstanceCache = ffi.Void Function(
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+);
+
+typedef DartBleCreateInstanceCache = void Function(
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+);
+
 /*
 typedef BleSetDefaultAdapter = ffi.Void Function(
   ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
@@ -26,55 +30,58 @@ typedef DartBleSetDefaultAdapter = void Function(
 );
 */
 typedef BleScanForDevices = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCache,
   ffi.Int64 port,
   ffi.Int64 seconds,
 );
 
 typedef DartBleScanForDevices = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCache,
   int port,
   int seconds,
 );
 
-
 typedef BleListDevices = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  //ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> bleCache,
   ffi.Int64 port,
 );
 
 typedef DartBleListDevices = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  //ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> bleCache,
   int port,
 );
 
-
-
-
 /// binding connectToDevice from ffi to dart
 typedef ConnectToDevice = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCache,
   ffi.Int64 port,
   ffi.Pointer<Utf8> address,
 );
 typedef DartConnectToDevice = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCache,
   int port,
   ffi.Pointer<Utf8> address,
 );
 
 /// binding disconnect method from ffi to dart
 typedef DisconnectFromDevice = ffi.Void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCache,
   ffi.Int64 port,
 );
 typedef DartDisconnectFromDevice = void Function(
-  ffi.Pointer<ffi.Pointer<ffi.NativeType>> ble,
+  ffi.Pointer<ffi.NativeType> ble,
+  ffi.Pointer<ffi.Pointer<ffi.NativeType>> bleCache,
   int port,
 );
 
-
-/// binding dart object to cobject 
+/// binding dart object to cobject
 typedef store_dart_post_cobject_C = ffi.Void Function(
   ffi.Pointer<
           ffi.NativeFunction<

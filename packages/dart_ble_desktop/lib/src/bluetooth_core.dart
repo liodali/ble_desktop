@@ -40,7 +40,10 @@ abstract class BluetoothCore {
   }
   @mustCallSuper
   dispose() {
-    currentIdBleCore--;
+    if (_instances.containsKey(currentIdBleCore)) {
+      _instances[currentIdBleCore]?.dispose();
+      currentIdBleCore--;
+    }
   }
 
   Future scanForDevices({int secondsWait = 2});
@@ -56,9 +59,11 @@ class BluetoothCoreImpl extends BluetoothCore {
   Future scanForDevices({int secondsWait = 2}) async {
     final completer = Completer<int>();
     final ptr = _bleFFI.blePointer;
+    final cachePTR = _bleFFI.bleCachePointer;
     final sendPort = singleCompletePort(completer);
     _bleFFI.scanForDevices(
       ptr,
+      cachePTR,
       sendPort.nativePort,
       seconds: secondsWait,
     );
@@ -73,8 +78,12 @@ class BluetoothCoreImpl extends BluetoothCore {
   Future<List<Device>> getListDevices() async {
     final completer = Completer<String>();
     final ptr = _bleFFI.blePointer;
+    final cachePTR = _bleFFI.bleCachePointer;
     final sendPort = singleCompletePort(completer);
-    _bleFFI.getListDevices(ptr, sendPort.nativePort);
+    _bleFFI.getListDevices(
+      cachePTR.value,
+      sendPort.nativePort,
+    );
     final resultJson = await completer.future;
     final res = resultJson;
     if (res.contains("err")) {
@@ -88,8 +97,14 @@ class BluetoothCoreImpl extends BluetoothCore {
   Future<bool> connect({required String deviceAddress}) async {
     final completer = Completer<int>();
     final ptr = _bleFFI.blePointer;
+    final cachePTR = _bleFFI.bleCachePointer;
     final sendPort = singleCompletePort(completer);
-    _bleFFI.connectToDevice(ptr, sendPort.nativePort, deviceAddress);
+    _bleFFI.connectToDevice(
+      ptr,
+      cachePTR,
+      sendPort.nativePort,
+      deviceAddress,
+    );
     final result = await completer.future;
 
     return result == 1 ? true : false;
@@ -99,9 +114,17 @@ class BluetoothCoreImpl extends BluetoothCore {
   Future<bool> disconnect() async {
     final completer = Completer<int>();
     final ptr = _bleFFI.blePointer;
+    final cachePTR = _bleFFI.bleCachePointer;
     final sendPort = singleCompletePort(completer);
-    _bleFFI.disconnect(ptr, sendPort.nativePort);
+    _bleFFI.disconnect(
+      ptr,
+      cachePTR,
+      sendPort.nativePort,
+    );
     final result = await completer.future;
+    if (result == -404) {
+      throw Exception("there is no device connected before");
+    }
     return result == 1 ? true : false;
   }
 }
