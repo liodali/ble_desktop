@@ -1,3 +1,5 @@
+use std::mem;
+
 use btleplug::api::Peripheral as _;
 use btleplug::api::PeripheralProperties;
 use btleplug::platform::Peripheral;
@@ -6,11 +8,11 @@ use futures::future::join_all;
 
 use crate::models::device_info::*;
 
-pub async fn get_property_from_peri(peripheral: Peripheral) -> Result<PeripheralProperties,()> {
+pub async fn get_property_from_peri(peripheral: Peripheral) -> Result<PeripheralProperties, ()> {
     return Ok(peripheral.properties().await.unwrap().unwrap());
 }
 
-pub async fn get_status_from_peri(peripheral: Peripheral) -> Result<bool,()> {
+pub async fn get_status_from_peri(peripheral: Peripheral) -> Result<bool, ()> {
     return Ok(peripheral.is_connected().await.unwrap());
 }
 
@@ -28,14 +30,15 @@ pub fn map_peripherals_to_device_info(vec: Vec<Peripheral>) -> Vec<DeviceInfo> {
     let mut vec_properties = Vec::with_capacity(len);
     let vec_peripherals = Vec::from(vec);
     println!("clone list");
-    let mut list_details = block_on(async {
+    let list_details = block_on(async move {
         let mut list_details: Vec<(bool, PeripheralProperties)> = Vec::with_capacity(len);
-        let vec = vec_peripherals.clone();
+        let vec = vec_peripherals;
         for (index, peri) in vec.iter().enumerate() {
             println!("get status of {i}", i = index);
             let mut peri = peri.clone();
             println!("get propertie");
             let propertie = peri.properties().await.unwrap().unwrap();
+            println!("{:?}", propertie);
             println!("get statu");
             let status = peri.is_connected().await.unwrap_or(false);
             let detail = (status, propertie);

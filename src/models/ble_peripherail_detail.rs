@@ -6,7 +6,8 @@ use crate::models::device_info::DeviceInfo;
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct DetailPeripheral {
-    pub(crate) peripheral_info: (Peripheral, PeripheralProperties),
+    pub(crate) peripheral: Peripheral,
+    pub(crate) peripheral_properties: PeripheralProperties,
     pub(crate) is_connected: bool,
 }
 
@@ -20,12 +21,12 @@ impl DetailPeripheral {
         return self.is_connected;
     }
     pub fn get_peripheral(&self) -> Peripheral {
-        return self.peripheral_info.0.clone();
+        return self.peripheral.clone();
     }
     pub fn get_properties(&self) -> PeripheralProperties {
-        self.peripheral_info.1.clone()
+        self.peripheral_properties.clone()
     }
     pub fn to_device_info(&self) -> DeviceInfo {
-        return DeviceInfo::from(self.peripheral_info.1.clone(), self.is_connected);
+        return DeviceInfo::from(self.peripheral_properties.clone(), self.is_connected);
     }
 }

@@ -14,7 +14,7 @@ use hashbrown::HashMap;
 use once_cell::sync::Lazy;
 
 use crate::common::utils::*;
-use crate::models::ble_peripherail_detail::{DetailPeripheral};
+use crate::models::ble_peripherail_detail::DetailPeripheral;
 use crate::models::device_info::*;
 use crate::models::filter_device::{FilterBleDevice, FilterType};
 
@@ -47,8 +47,8 @@ pub trait BleRepo: Send + Sync {
     fn list_devices(&self, vec: Vec<StructPeripheral>, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>;
     //fn start_scan(&mut self, filter: Option<ScanFilter>);
     //fn stop_scan(&mut self);
-    fn connect(&mut self, peripheral: StructPeripheral) -> Result<bool>;
-    fn disconnect(&mut self, peripheral: StructPeripheral) -> Result<bool>;
+    fn connect(&self, peripheral: StructPeripheral) -> Result<bool>;
+    fn disconnect(&self, peripheral: StructPeripheral) -> Result<bool>;
     fn is_connected(&mut self, peripherals: Vec<StructPeripheral>, device: &DeviceInfo) -> Result<bool>;
     //async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo>;
 }
@@ -133,7 +133,6 @@ impl BleCore {
     pub async fn get_peripheral_by_filter(&mut self, peripheral_list: Vec<StructPeripheral>, filter: &FilterBleDevice) -> Option<StructPeripheral> {
         let mut peripherals = peripheral_list.clone();
         let mut vec_peripherals = Vec::from(peripherals);
-        println!("filter peripherals by filter: {v}", v = filter.value.clone());
         let properties = get_list_properties_from_peripheral(vec_peripherals.clone()).await;
         for (index, p) in properties.iter().enumerate() {
             match filter.name {
@@ -231,9 +230,7 @@ impl BleCore {
             Some(filter) => { filter }
             _ => { ScanFilter::default() }
         };
-        println!("get adapter for scan");
-        let adapt = self.get_adapter().unwrap().clone();//self.get_adapters_async().await.unwrap().iter().nth(0).unwrap().clone();
-        println!("adapter :{:?}", adapt);
+        let adapt = self.get_adapter().unwrap().clone();
         let _r = adapt.start_scan(filter).await.expect("error to start scan");
         println!("finish scan");
     }
@@ -265,30 +262,6 @@ impl BleRepo for BleCore {
         }
     }
 
-    // fn get_cache_peripherals(&mut self) -> Vec<StructPeripheral> {
-    //     let vec = unsafe {
-    //         assert!(!self.ble_cache.ble_list_peripherals.is_null());
-    //
-    //         &*self.ble_cache.ble_list_peripherals
-    //     };
-    //     println!("get");
-    //     let list = vec.to_vec();
-    //     println!("copy");
-    //     list
-    //     //self.ble_cache.ble_list_peripherals.unwrap().clone()
-    // }
-
-    // fn set_cache_peripherals(&mut self, vec_peripherals: Vec<StructPeripheral>) {
-    //     let mut list = vec_peripherals.clone();
-    //
-    //     let vec = unsafe {
-    //         &mut *self.ble_cache.ble_list_peripherals
-    //     };
-    //     if !self.get_cache_peripherals().is_empty() {
-    //         vec.clear();
-    //     }
-    //     vec.append(&mut list);
-    // }
 
     fn scan_for_devices(&self, secs: Option<u64>) {
         let sec = if secs.is_none() { 2 } else { secs.unwrap() };
@@ -319,24 +292,22 @@ impl BleRepo for BleCore {
     }
     fn get_list_peripherals_with_detail(&self) -> Vec<DetailPeripheral>
     {
-        println!("call $get_adapter in $get_list_peripherals");
         let adapt = self.get_adapter().unwrap().clone();
-        println!("adapter :{:?}", adapt);
-        println!("finish call $get_adapter in $get_list_peripherals");
+
         return block_on(async move {
-            //let mut central = &(adapt_option.clone());
-            //adapt_option.start_scan(ScanFilter::default()).await;
             let mut detail_peris = Vec::new();
             let peripherals = adapt.peripherals().await.unwrap();
-            println!("find peris len {}", peripherals.len());
             for peri in peripherals {
-                let propertie = peri.properties().await.unwrap().unwrap();
+                let properties = peri.properties().await.unwrap().unwrap();
                 let status = peri.is_connected().await.unwrap();
                 detail_peris.push(DetailPeripheral {
-                    peripheral_info: (peri, propertie),
+                    peripheral: peri,
+                    peripheral_properties: properties,
                     is_connected: status,
                 })
             }
+            println!("{:?}", detail_peris.first().unwrap().peripheral_properties);
+
             return detail_peris;
         });
     }
@@ -350,23 +321,9 @@ impl BleRepo for BleCore {
         self.find_peripherals(vec, filter)
     }
 
-    fn connect(&mut self, peripheral: StructPeripheral) -> Result<bool> {
-        println!("start connection");
-        /*println!("get ble device connected");
-        let ble_device = self.ble_cache.ble_device.as_ref();
-        println!("check if any device is connected");
-        match ble_device {
-            Some(_) => {
-                println!("we found connected device,now disconnect ");
-                //device.disconnect().await.expect("we cannot disconnect");
-                self.ble_cache.ble_device = None;
-            }
-            _ => {}
-        }*/
+    fn connect(&self, peripheral: StructPeripheral) -> Result<bool> {
         let result = block_on(async {
-            println!("search for peri");
             let peripheral = peripheral;
-            println!("get peripheral to connect");
             let res = peripheral.connect().await;
             match res {
                 Ok(()) => {
@@ -377,14 +334,13 @@ impl BleRepo for BleCore {
                 _ => {
                     println!("error");
                     Ok(false)
-                    //panic!("error to connect")
                 }
             }
         });
         result
     }
 
-    fn disconnect(&mut self, peripheral: StructPeripheral) -> Result<bool> {
+    fn disconnect(&self, peripheral: StructPeripheral) -> Result<bool> {
         block_on(async {
             let _e = peripheral.disconnect().await;
             return Ok(true);
