@@ -34,28 +34,15 @@ pub fn map_peripherals_to_device_info(vec: Vec<Peripheral>) -> Vec<DeviceInfo> {
         let mut list_details: Vec<(bool, PeripheralProperties)> = Vec::with_capacity(len);
         let vec = vec_peripherals;
         for (index, peri) in vec.iter().enumerate() {
-            println!("get status of {i}", i = index);
             let mut peri = peri.clone();
-            println!("get propertie");
             let propertie = peri.properties().await.unwrap().unwrap();
-            println!("{:?}", propertie);
-            println!("get statu");
             let status = peri.is_connected().await.unwrap_or(false);
             let detail = (status, propertie);
             list_details.push(detail);
         };
         list_details
     });
-    /*let list_connected_state = join_all(vec_peripherals.iter().map(|p|
-        async {
-            p.is_connected().await.unwrap()
-        }
-    )).await;*/
-    println!("get properties");
-    // let properties_peripherals = block_on(async {
-    //     let peris = vec_peripherals.to_vec();
-    //     get_list_properties_from_peripheral(peris).await
-    // });
+
     for detail in list_details {
         let is_connected = detail.0;
         let propertie = detail.1;
