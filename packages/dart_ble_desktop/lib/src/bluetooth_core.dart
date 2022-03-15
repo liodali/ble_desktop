@@ -8,24 +8,15 @@ import 'common/isolate_helper.dart';
 import 'models/exceptions.dart';
 import 'native/ble_ffi.dart';
 
-int currentIdBleCore = 0;
-
 abstract class BluetoothCore {
   late BleFFI _bleFFI;
 
-  int _idBleCore = currentIdBleCore;
+  static late final BluetoothCore? _instance;
 
-  static final _instances = <int, BluetoothCore>{};
+  static BluetoothCore getInstance() {
+    _instance ??= BluetoothCoreImpl.setUp();
 
-  static BluetoothCore getInstance({int idBleCore = -1}) {
-    var id = idBleCore;
-    if (idBleCore == -1) {
-      id = currentIdBleCore;
-    }
-    if (!_instances.containsKey(id)) {
-      _instances[id] = BluetoothCoreImpl.setUp();
-    }
-    return _instances[id]!;
+    return _instance!;
   }
 
   static init(String namePathLib) {
@@ -37,16 +28,12 @@ abstract class BluetoothCore {
   }
 
   BluetoothCore._() {
-    _idBleCore++;
     _bleFFI = BleFFI.instance;
-    _instances[_idBleCore] = this;
   }
+
   @mustCallSuper
   dispose() {
-    if (_instances.containsKey(currentIdBleCore)) {
-      _instances[currentIdBleCore]?.dispose();
-      currentIdBleCore--;
-    }
+    _instance = null;
   }
 
   /// scanForDevices
