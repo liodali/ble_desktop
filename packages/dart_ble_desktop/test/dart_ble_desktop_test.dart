@@ -6,7 +6,7 @@ import 'package:dart_ble_desktop/dart_ble_desktop.dart';
 
 void main() async {
   await initBluetoothDesktop("dynamicLib");
-  BluetoothCore bleCore = BluetoothCoreImpl.setUp();
+  BluetoothCore bleCore = BluetoothCore.getInstance();
   const String adr = String.fromEnvironment("device-adr", defaultValue: "");
   const String name = String.fromEnvironment("device-name", defaultValue: "");
   await bleCore.scanForDevices(secondsWait: 1);
