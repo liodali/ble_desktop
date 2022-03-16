@@ -8,21 +8,15 @@ import 'common/isolate_helper.dart';
 import 'models/exceptions.dart';
 import 'native/ble_ffi.dart';
 
-int currentIdBleCore = 0;
-
 abstract class BluetoothCore {
   late BleFFI _bleFFI;
 
-  int _idBleCore = currentIdBleCore;
+  static BluetoothCore? _instance;
 
-  static final _instances = <int, BluetoothCore>{};
+  static BluetoothCore getInstance() {
+    _instance ??= BluetoothCoreImpl.setUp();
 
-  static BluetoothCore? getInstance({int idBleCore = -1}) {
-    var id = idBleCore;
-    if (idBleCore == -1) {
-      id = currentIdBleCore;
-    }
-    return _instances[id];
+    return _instance!;
   }
 
   static init(String namePathLib) {
@@ -33,27 +27,59 @@ abstract class BluetoothCore {
     BleFFI.close();
   }
 
-  BluetoothCore.setUp() {
-    _idBleCore++;
+  BluetoothCore._() {
     _bleFFI = BleFFI.instance;
-    _instances[_idBleCore] = this;
-  }
-  @mustCallSuper
-  dispose() {
-    if (_instances.containsKey(currentIdBleCore)) {
-      _instances[currentIdBleCore]?.dispose();
-      currentIdBleCore--;
-    }
   }
 
+  @mustCallSuper
+  dispose() {
+    _instance = null;
+  }
+
+  /// scanForDevices
+  /// this method is Future that  will call internal  ble api to start looking for available devices
+  /// for period of time that can be modified using [secondsWait] that has default value which's 2 seconds
+  /// the parameter [secondsWait] should be positive value or it will take default value
+  ///
+  /// this method returns nothing.
+  ///
+  /// this method throw [NotFoundAdapterSelectedException], if you don't configure correctly [BluetoothCore] instance
+  ///
+  /// [secondsWait] : (int) number of seconds that should be scanning for available devices
   Future scanForDevices({int secondsWait = 2});
+
+  /// getListDevices
+  /// this method will return list of available devices that founded after start scanning
+  /// this method should be run after [scanForDevices] method to make sure that you will get list of devices
+  ///
+  /// return list of [Device] that represent the detail data of each available device
+  ///
+  /// this method throw [NotFoundAdapterSelectedException], if you don't configure correctly [BluetoothCore] instance
   Future<List<Device>> getListDevices();
+
+  /// connect
+  /// this method will connect to the device that has the address with parameter [deviceAddress],
+  /// return bool that represent the state of the operation which means that if the result is true,your device connected succefully to the desired device
+  /// if it false,the connection is failed
+  ///
+  /// this method doesn't throw any exception.
+  ///
+  /// accepet [deviceAddress] as parameter and return bool
+  ///
+  /// [deviceAddress] : (String) (required) this represent the address of the device that use want to connect to it
   Future<bool> connect({required String deviceAddress});
+
+  /// disconnect
+  /// this method will disconnect to the device that's already connected to it,if their is no device connected will throw exception,
+  /// return bool that represent the state of the operation which means that if the result is true,your device disconnected succefully from the prvious device
+  /// if it false,the disconnection is failed
+  ///
+  /// this method exception if their no device connected.
   Future<bool> disconnect();
 }
 
 class BluetoothCoreImpl extends BluetoothCore {
-  BluetoothCoreImpl.setUp() : super.setUp();
+  BluetoothCoreImpl.setUp() : super._();
 
   @override
   Future scanForDevices({int secondsWait = 2}) async {
@@ -71,7 +97,6 @@ class BluetoothCoreImpl extends BluetoothCore {
     if (result == -1) {
       throw const NotFoundAdapterSelectedException();
     }
-    print("result for scan finish with ${result == 1 ? "success" : "fail"} ");
   }
 
   @override

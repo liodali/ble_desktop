@@ -2,10 +2,10 @@ extern crate futures;
 
 use std::ops::Deref;
 use std::sync::Arc;
-use ble_desktop::common::utils::get_property_from_peri;
 
-use ble_desktop::models::ble_core::{ BleCore, BleRepo};
+use ble_desktop::common::utils::get_property_from_peri;
 use ble_desktop::models::ble_cache::BleCache;
+use ble_desktop::models::ble_core::{BleCore, BleRepo};
 use ble_desktop::models::filter_device::{FilterBleDevice, FilterType};
 
 pub fn instantiate() -> Arc<BleCore> {
@@ -31,22 +31,33 @@ fn main() {
         println!("len {}", iters_adapts.len());
         //ble.select_default_adapter(None);
         ble.scan_for_devices(Some(2));
-        let list = ble.get_list_peripherals();
-        cache = BleCache::from_data(None,list);
-        let devices = ble.list_devices( cache.get_cache_peripherals(),None);
-        devices.into_iter().map(
+        let listDetails = ble.get_list_peripherals_with_detail();
+        cache = BleCache::from_data(None, listDetails.clone());
+        let peripherals = cache.get_cache_peripherals()
+            .iter().map(|detail|
+            detail.get_peripheral()
+        ).collect();
+        let devices = ble.list_devices(peripherals, None);
+        devices.clone().into_iter().map(
             |d| d.to_string()
         ).for_each(
             |e| println!("{}", e)
         );
         let list = ble.get_list_peripherals();
-        println!("{:?}",list);
+        println!("{:?}", list);
         let property = get_property_from_peri(list.first().unwrap().clone()).await.unwrap();
-        println!("{:?}",property);
-        // ble.connect(FilterBleDevice {
-        //     name: FilterType::byAdr,
-        //     value: "3C:20:F6:EC:31:6C".to_string(),
-        // });
-        // ble.disconnect();
+        println!("{:?}", property);
+        let s = String::from("3C:20:F6:EC:31:6C");
+        let detailPeri = cache.get_cache_peripherals().iter().find(|d| d.to_device_info().adr.cmp(&s).is_eq()).unwrap();
+        /*
+        FilterBleDevice {
+            name: FilterType::by_adr,
+            value: "3C:20:F6:EC:31:6C".to_string(),
+        }
+         */
+        println!("index : {:?}", i = detailPeri.clone().get_peripheral());
+        ble.connect(detailPeri.clone().get_peripheral().clone());
+        cache = BleCache::from_data(Some(detailPeri.clone()), listDetails.clone());
+        ble.disconnect(cache.get_device().unwrap().get_peripheral());
     });
 }

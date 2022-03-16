@@ -104,7 +104,6 @@ impl BleCore {
         Ok(core.deref().clone())
     }
     pub fn get_instance() -> Option<Arc<Self>> {
-        println!("get");
         let map = INSTANCES.read().unwrap().clone();
         let ble = map.get(&0).unwrap().clone();
         Some(ble)
@@ -232,7 +231,6 @@ impl BleCore {
         };
         let adapt = self.get_adapter().unwrap().clone();
         let _r = adapt.start_scan(filter).await.expect("error to start scan");
-        println!("finish scan");
     }
     pub async fn stop_scan(&self) {
         let _r = self.get_adapter().unwrap().clone().stop_scan().await;
@@ -267,26 +265,17 @@ impl BleRepo for BleCore {
         let sec = if secs.is_none() { 2 } else { secs.unwrap() };
         block_on(async move {
             let sec = &sec;
-            println!("start scan");
             self.start_scan(Some(ScanFilter::default())).await;
-            println!("sleep for seconds");
             std::thread::sleep(std::time::Duration::from_secs(*sec));
             //sleep_fn(sec)
             self.stop_scan().await;
-            println!("stop scan");
         });
     }
 
     fn get_list_peripherals(&self) -> Vec<StructPeripheral> {
         return block_on(async move {
-            //let mut central = &(adapt_option.clone());
-            //adapt_option.start_scan(ScanFilter::default()).await;
-            println!("call $get_adapter in $get_list_peripherals");
             let adapt = self.get_adapter().unwrap().clone();
-            println!("adapter :{:?}", adapt);
-            println!("finish call $get_adapter in $get_list_peripherals");
             let result_peripherals = adapt.peripherals().await.unwrap();
-            println!("find peris len {}", result_peripherals.len());
             return result_peripherals;
         });
     }
@@ -306,7 +295,6 @@ impl BleRepo for BleCore {
                     is_connected: status,
                 })
             }
-            println!("{:?}", detail_peris.first().unwrap().peripheral_properties);
 
             return detail_peris;
         });
@@ -317,7 +305,6 @@ impl BleRepo for BleCore {
         if vec.clone().is_empty() {
             return Vec::new();
         }
-        println!("map peris to devices");
         self.find_peripherals(vec, filter)
     }
 
@@ -327,12 +314,11 @@ impl BleRepo for BleCore {
             let res = peripheral.connect().await;
             match res {
                 Ok(()) => {
-                    println!("connect succefully");
-                    //let _r = self.ble_cache.ble_device.insert(peripheral);
+                    println!("device connected");
                     Ok(true)
                 }
                 _ => {
-                    println!("error");
+                    println!("device not connected {:?}",res);
                     Ok(false)
                 }
             }
