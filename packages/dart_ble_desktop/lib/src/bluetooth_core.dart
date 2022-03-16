@@ -11,7 +11,7 @@ import 'native/ble_ffi.dart';
 abstract class BluetoothCore {
   late BleFFI _bleFFI;
 
-  static late final BluetoothCore? _instance;
+  static BluetoothCore? _instance;
 
   static BluetoothCore getInstance() {
     _instance ??= BluetoothCoreImpl.setUp();
