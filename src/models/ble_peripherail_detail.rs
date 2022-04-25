@@ -17,6 +17,13 @@ unsafe impl Send for DetailPeripheral {}
 unsafe impl Sync for DetailPeripheral {}
 
 impl DetailPeripheral {
+    pub fn create_connected_detail(peri: Peripheral, propertie: PeripheralProperties) -> Self {
+        return DetailPeripheral {
+            peripheral: peri,
+            peripheral_properties: propertie,
+            is_connected: true,
+        };
+    }
     pub fn get_status(&self) -> bool {
         return self.is_connected;
     }

@@ -2,13 +2,14 @@ use std::mem;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
-use btleplug::api::{Central, CentralEvent, Peripheral, PeripheralProperties, ScanFilter};
+use btleplug::api::{Central, CentralEvent, CharPropFlags, Peripheral, PeripheralProperties, ScanFilter};
 use btleplug::api::Manager as _;
 use btleplug::platform::{Adapter, Manager};
 use btleplug::platform::Peripheral as StructPeripheral;
 use btleplug::Result;
 use futures::{StreamExt, TryStreamExt};
 use futures::executor::block_on;
+use futures::future::join_all;
 use hashbrown::hash_map::Entry;
 use hashbrown::HashMap;
 use once_cell::sync::Lazy;
@@ -42,15 +43,12 @@ pub trait BleRepo: Send + Sync {
     fn scan_for_devices(&self, secs: Option<u64>);
     fn get_list_peripherals(&self) -> Vec<StructPeripheral>;
     fn get_list_peripherals_with_detail(&self) -> Vec<DetailPeripheral>;
-    // fn get_cache_peripherals(&mut self) -> Vec<StructPeripheral>;
-    // fn set_cache_peripherals(&mut self, vec_peripherals: Vec<StructPeripheral>);
     fn list_devices(&self, vec: Vec<StructPeripheral>, filter: Option<FilterBleDevice>) -> Vec<DeviceInfo>;
-    //fn start_scan(&mut self, filter: Option<ScanFilter>);
-    //fn stop_scan(&mut self);
+    fn get_connected_device(&self) -> Option<StructPeripheral>;
     fn connect(&self, peripheral: StructPeripheral) -> Result<bool>;
     fn disconnect(&self, peripheral: StructPeripheral) -> Result<bool>;
     fn is_connected(&mut self, peripherals: Vec<StructPeripheral>, device: &DeviceInfo) -> Result<bool>;
-    //async fn find_peripherals(&mut self, filter: Option<&str>) -> Vec<DeviceInfo>;
+    fn readAllData(&self, peripheral: StructPeripheral) -> Result<Vec<String>>;
 }
 
 unsafe impl Send for BleCore {}
@@ -308,6 +306,17 @@ impl BleRepo for BleCore {
         self.find_peripherals(vec, filter)
     }
 
+    fn get_connected_device(&self) -> Option<StructPeripheral> {
+        self.scan_for_devices(Some(1));
+        let peri = self.get_list_peripherals().into_iter()
+            .find(|p| {
+                block_on(async {
+                    p.is_connected().await.unwrap()
+                })
+            });
+        return peri;
+    }
+
     fn connect(&self, peripheral: StructPeripheral) -> Result<bool> {
         let result = block_on(async {
             let peripheral = peripheral;
@@ -318,7 +327,7 @@ impl BleRepo for BleCore {
                     Ok(true)
                 }
                 _ => {
-                    println!("device not connected {:?}",res);
+                    println!("device not connected {:?}", res);
                     Ok(false)
                 }
             }
@@ -355,5 +364,30 @@ impl BleRepo for BleCore {
             }
         });
         Ok(is_connected)
+    }
+
+    fn readAllData(&self, peripheral: StructPeripheral) -> Result<Vec<String>> {
+        let res = block_on(async {
+            peripheral.discover_services().await;
+            std::thread::sleep(std::time::Duration::from_secs(3));
+            let bt_characteristics = peripheral.characteristics();
+            let data = join_all(
+                bt_characteristics.iter().map(|e| async {
+                   let result_bytes = peripheral.read(e).await;
+                    if result_bytes.is_ok() {
+                        let bytes = result_bytes.unwrap();
+                        println!("{:?}",bytes);
+                        let s = String::from_utf8(bytes).unwrap();
+                        return s;
+                    } else {
+                        let uuid = e.service_uuid.to_string();
+                        println!("{i} error to read", i = uuid);
+                        return "".to_string();
+                    }
+                })
+            ).await;
+            return data.into_iter().filter(|p| !p.is_empty()).collect();
+        });
+        return Ok(res);
     }
 }
